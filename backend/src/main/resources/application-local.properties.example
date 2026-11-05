@@ -1,0 +1,9 @@
+# Copy this file to application-local.properties (same folder) and fill in your values.
+# application-local.properties is git-ignored: never commit real passwords or secrets.
+
+spring.datasource.url=jdbc:postgresql://localhost:5432/itsm
+spring.datasource.username=postgres
+spring.datasource.password=CHANGE_ME
+
+# Any random string of AT LEAST 32 characters. All teammates can use different ones.
+app.jwt.secret=CHANGE_ME_to_a_random_string_of_at_least_32_chars
