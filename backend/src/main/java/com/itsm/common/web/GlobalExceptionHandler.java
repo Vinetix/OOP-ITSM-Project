@@ -1,17 +1,22 @@
 package com.itsm.common.web;
 
 import com.itsm.common.exception.ItsmException;
+import com.itsm.security.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.validation.FieldError;
@@ -98,6 +103,13 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "INVALID_PARAMETER", message, req);
     }
 
+    /** e.g. ?sort=doesNotExist on a paginated endpoint. */
+    @ExceptionHandler(PropertyReferenceException.class)
+    public ResponseEntity<ApiError> handleBadSortProperty(PropertyReferenceException ex, HttpServletRequest req) {
+        return build(HttpStatus.BAD_REQUEST, "INVALID_PARAMETER",
+                "Unknown field '" + ex.getPropertyName() + "' in sort or filter", req);
+    }
+
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ApiError> handleMissingParam(MissingServletRequestParameterException ex, HttpServletRequest req) {
         return build(HttpStatus.BAD_REQUEST, "MISSING_PARAMETER",
@@ -125,10 +137,24 @@ public class GlobalExceptionHandler {
 
     // ---------- Security ----------
 
-    /** Wrong email/password at login (thrown by the AuthenticationManager in Phase 1). */
+    /**
+     * 401. Three cases:
+     * - wrong email/password at login (BadCredentialsException)
+     * - deactivated account at login (DisabledException)
+     * - protected endpoint without a valid token (reason set by JwtAuthenticationFilter)
+     */
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ApiError> handleAuthentication(AuthenticationException ex, HttpServletRequest req) {
-        return build(HttpStatus.UNAUTHORIZED, "AUTHENTICATION_FAILED", "Invalid email or password", req);
+        if (ex instanceof BadCredentialsException) {
+            return build(HttpStatus.UNAUTHORIZED, "AUTHENTICATION_FAILED", "Invalid email or password", req);
+        }
+        if (ex instanceof DisabledException) {
+            return build(HttpStatus.UNAUTHORIZED, "ACCOUNT_DISABLED",
+                    "This account has been deactivated. Contact your administrator.", req);
+        }
+        Object jwtError = req.getAttribute(JwtAuthenticationFilter.JWT_ERROR_ATTRIBUTE);
+        String message = jwtError != null ? jwtError.toString() : "Authentication is required. Please log in.";
+        return build(HttpStatus.UNAUTHORIZED, "AUTHENTICATION_REQUIRED", message, req);
     }
 
     /** Logged in, but the role is not allowed (e.g. EMPLOYEE calling an ADMIN endpoint). */
@@ -154,6 +180,13 @@ public class GlobalExceptionHandler {
         log.warn("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
         return build(HttpStatus.CONFLICT, "DATA_CONFLICT",
                 "The operation conflicts with existing data", req);
+    }
+
+    /** A query was built with invalid input (e.g. bad sort field). A client error, not a DB outage. */
+    @ExceptionHandler(InvalidDataAccessApiUsageException.class)
+    public ResponseEntity<ApiError> handleInvalidQuery(InvalidDataAccessApiUsageException ex, HttpServletRequest req) {
+        log.warn("Invalid data access usage: {}", ex.getMessage());
+        return build(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Invalid query parameters", req);
     }
 
     /** Database down or unreachable ("Database failure" in the brief). */
