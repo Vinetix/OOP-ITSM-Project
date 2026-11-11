@@ -48,4 +48,8 @@ export const usersApi = {
 
   // the backend refuses (422) if you try to deactivate yourself
   deactivate: (id) => axiosClient.patch(`/api/users/${id}/deactivate`).then((res) => res.data),
+
+  // replaces the technician's whole skill list; [] removes them all
+  replaceTechnicianSkills: (id, skillIds) =>
+    axiosClient.put(`/api/users/${id}/skills`, { skillIds }).then((res) => res.data),
 }

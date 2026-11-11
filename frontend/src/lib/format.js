@@ -36,3 +36,16 @@ export function formatDateTime(value) {
   const date = toDate(value)
   return date ? `${formatDate(date)}, ${formatTime(date)}` : '—'
 }
+
+// Minutes as people say them: 5 → "5 min", 90 → "1 h 30 min", 1680 → "1 d 4 h".
+export function formatMinutes(minutes) {
+  if (minutes === null || minutes === undefined || Number.isNaN(Number(minutes))) return '—'
+  const total = Math.max(0, Math.round(Number(minutes)))
+  if (total === 0) return '0 min'
+  const days = Math.floor(total / 1440)
+  const hours = Math.floor((total % 1440) / 60)
+  const mins = total % 60
+  return [days && `${days} d`, hours && `${hours} h`, mins && `${mins} min`]
+    .filter(Boolean)
+    .join(' ')
+}
