@@ -1,5 +1,7 @@
 package com.itsm.user;
 
+import com.itsm.catalog.Skill;
+import com.itsm.catalog.SkillRepository;
 import com.itsm.common.exception.BusinessRuleViolationException;
 import com.itsm.common.exception.DuplicateResourceException;
 import com.itsm.common.exception.InvalidRequestException;
@@ -21,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Business logic for users. Controllers stay thin and only translate HTTP <-> method calls.
@@ -33,6 +36,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final TechnicianRepository technicianRepository;
+    private final SkillRepository skillRepository;
     private final UserFactory userFactory;
     private final PasswordEncoder passwordEncoder;
 
@@ -113,6 +117,22 @@ public class UserService {
         User user = findUser(id);
         user.deactivate();
         return UserResponse.from(user);
+    }
+
+    /** Replaces a technician's whole skill set (an empty set removes all skills). */
+    public UserResponse replaceTechnicianSkills(Long technicianId, Set<Long> skillIds) {
+        if (!(findUser(technicianId) instanceof Technician technician)) {
+            throw new BusinessRuleViolationException("Skills can only be assigned to technicians");
+        }
+        List<Skill> skills = skillRepository.findAllById(skillIds);
+        if (skills.size() != skillIds.size()) {
+            throw new ResourceNotFoundException("One or more of the given skill ids do not exist");
+        }
+        skills.stream().filter(skill -> !skill.isActive()).findFirst().ifPresent(skill -> {
+            throw new BusinessRuleViolationException("Skill '" + skill.getName() + "' is inactive and cannot be assigned");
+        });
+        technician.replaceSkills(skills);
+        return UserResponse.from(technician);
     }
 
     // ---------------- self-service ----------------

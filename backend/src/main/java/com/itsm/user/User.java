@@ -1,5 +1,6 @@
 package com.itsm.user;
 
+import com.itsm.common.domain.Activatable;
 import com.itsm.common.domain.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorColumn;
@@ -31,7 +32,7 @@ import java.util.Locale;
 @Inheritance(strategy = InheritanceType.JOINED)
 @DiscriminatorColumn(name = "role", discriminatorType = DiscriminatorType.STRING, length = 20)
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // required by JPA, hidden from application code
-public abstract class User extends BaseEntity {
+public abstract class User extends BaseEntity implements Activatable {
 
     @Column(nullable = false, length = 100)
     private String fullName;
@@ -68,10 +69,12 @@ public abstract class User extends BaseEntity {
         this.passwordHash = newPasswordHash;
     }
 
+    @Override
     public void activate() {
         this.active = true;
     }
 
+    @Override
     public void deactivate() {
         this.active = false;
     }

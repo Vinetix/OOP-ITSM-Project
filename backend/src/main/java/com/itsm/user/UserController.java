@@ -5,6 +5,7 @@ import com.itsm.security.UserPrincipal;
 import com.itsm.user.dto.AvailabilityRequest;
 import com.itsm.user.dto.ChangePasswordRequest;
 import com.itsm.user.dto.CreateUserRequest;
+import com.itsm.user.dto.TechnicianSkillsRequest;
 import com.itsm.user.dto.UpdateProfileRequest;
 import com.itsm.user.dto.UpdateUserRequest;
 import com.itsm.user.dto.UserResponse;
@@ -117,6 +118,13 @@ public class UserController {
     @Operation(summary = "ADMIN: edit a user (role and email cannot change)")
     public UserResponse update(@PathVariable("id") Long id, @Valid @RequestBody UpdateUserRequest request) {
         return userService.update(id, request);
+    }
+
+    @PutMapping("/{id}/skills")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "ADMIN: set a technician's skills (replaces the whole list)")
+    public UserResponse replaceSkills(@PathVariable("id") Long id, @Valid @RequestBody TechnicianSkillsRequest request) {
+        return userService.replaceTechnicianSkills(id, request.skillIds());
     }
 
     @PatchMapping("/{id}/activate")
