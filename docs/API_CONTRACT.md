@@ -1,6 +1,6 @@
 # I-ITSM API Contract
 
-Living document, updated every backend phase. Last update: **Phase 1.1 (security & users)**.
+Living document, updated every backend phase. Last update: **Phase 2 (catalog: services, categories, skills, SLA policies)**.
 Live, always-current docs: `http://localhost:8080/swagger-ui.html` (raw spec: `/v3/api-docs`).
 
 ## Conventions (apply to every endpoint)
@@ -66,7 +66,8 @@ Fields that don't apply are **omitted** from responses (e.g. `department` only a
 | 405 | `METHOD_NOT_ALLOWED` | Wrong HTTP method (frontend bug) |
 | 409 | `DUPLICATE_RESOURCE`, `DATA_CONFLICT` | Already exists (e.g. email taken) |
 | 409 | `CONCURRENT_MODIFICATION` | Someone else changed it: reload and retry |
-| 422 | `BUSINESS_RULE_VIOLATION` and specific codes (added in later phases) | Action not allowed right now; show `message` |
+| 422 | `BUSINESS_RULE_VIOLATION` | Action not allowed right now; show `message` |
+| 422 | `SLA_CONFIGURATION_MISSING` | No SLA policy exists for a priority; admin must add one |
 | 503 | `DATABASE_UNAVAILABLE` | Show "service temporarily unavailable" |
 | 500 | `INTERNAL_ERROR` | Generic error toast |
 
@@ -89,12 +90,15 @@ Fields that don't apply are **omitted** from responses (e.g. `department` only a
   "available": true,
   "senior": true,
   "maxActiveIncidents": 6,
-  "experienceYears": 9
+  "experienceYears": 9,
+  "skills": [
+    { "id": 4, "name": "VPN & Firewalls", "categoryCode": "NETWORK" }
+  ]
 }
 ```
 
-`department` appears only for `EMPLOYEE`. `available`, `senior`, `maxActiveIncidents`, `experienceYears` appear only
-for `TECHNICIAN`. `phone` is omitted when not set. The password is never returned.
+`department` appears only for `EMPLOYEE`. `available`, `senior`, `maxActiveIncidents`, `experienceYears`, `skills`
+(sorted by name, may be `[]`) appear only for `TECHNICIAN`. `phone` is omitted when not set. The password is never returned.
 
 ### AuthResponse
 
@@ -173,10 +177,12 @@ Password change errors: `400 INVALID_REQUEST` ("Current password is incorrect" /
 | GET | `/api/users/{id}` | ADMIN | – | `200` UserResponse |
 | POST | `/api/users` | ADMIN | CreateUserRequest | `201` UserResponse |
 | PUT | `/api/users/{id}` | ADMIN | UpdateUserRequest | `200` UserResponse |
+| PUT | `/api/users/{id}/skills` | ADMIN | `{ "skillIds": [3, 4, 6] }` (replaces all; `[]` clears) | `200` UserResponse |
 | PATCH | `/api/users/{id}/activate` | ADMIN | – | `200` UserResponse |
 | PATCH | `/api/users/{id}/deactivate` | ADMIN | – | `200` UserResponse |
 
 `search` matches name or email (case-insensitive). Deactivating your own account returns `422 BUSINESS_RULE_VIOLATION`.
+Skills: unknown id gives `404 RESOURCE_NOT_FOUND`; an inactive skill or a non-technician user gives `422 BUSINESS_RULE_VIOLATION`.
 
 **CreateUserRequest** (role-specific fields optional; ignored for other roles)
 
@@ -211,7 +217,199 @@ Technician defaults: `senior=false`, `maxActiveIncidents=5` (1–50), `experienc
 }
 ```
 
-## Demo accounts (seeded on first start, password `Password@123` for all)
+
+### Catalog: shared rules
+
+Categories, IT services and skills are **never deleted**, only deactivated (old incidents still reference them).
+`GET` lists return **active items only**, sorted by name. ADMIN can add `?includeInactive=true` to also see
+inactive ones (ignored for other roles). Names are unique (case-insensitive): a clash gives `409 DUPLICATE_RESOURCE`.
+Unknown ids give `404 RESOURCE_NOT_FOUND`.
+
+**CategorySummary** `{ "id": 8, "code": "APPLICATION", "name": "Application" }`
+**ServiceSummary** `{ "id": 1, "name": "Payment Gateway", "criticality": "CRITICAL" }`
+**SkillSummary** `{ "id": 9, "name": "Payment Systems", "categoryCode": "APPLICATION" }`
+
+Enums:
+- `criticality` (BusinessCriticality): `LOW`, `MEDIUM`, `HIGH`, `CRITICAL` (weights 1–4, used for priority).
+- `priority`: `P1` (Critical), `P2` (High), `P3` (Medium), `P4` (Low).
+
+### Catalog: Categories
+
+| Method | Path | Roles | Body | Success |
+|---|---|---|---|---|
+| GET | `/api/categories` | Any | `?includeInactive=true` (ADMIN only) | `200` CategoryResponse[] |
+| GET | `/api/categories/{id}` | Any | – | `200` CategoryResponse |
+| POST | `/api/categories` | ADMIN | CategoryRequest | `201` CategoryResponse |
+| PUT | `/api/categories/{id}` | ADMIN | CategoryRequest (`code` ignored) | `200` CategoryResponse |
+| PATCH | `/api/categories/{id}/activate` | ADMIN | – | `200` CategoryResponse |
+| PATCH | `/api/categories/{id}/deactivate` | ADMIN | – | `200` CategoryResponse |
+
+**CategoryRequest**
+
+```json
+{
+  "code": "PRINTING",
+  "name": "Printing",
+  "description": "Office printers, scanners and print queues",
+  "keywords": ["printer", "print", "scanner", "toner"]
+}
+```
+
+`code`: 2–30 letters/digits/underscore starting with a letter, stored uppercase, **cannot change** after creation.
+`keywords`: optional, max 30, each max 50 characters; stored lowercase without duplicates (used later for automatic
+category suggestion).
+
+**CategoryResponse**
+
+```json
+{
+  "id": 8,
+  "code": "APPLICATION",
+  "name": "Application",
+  "description": "Business applications and portals",
+  "keywords": ["app", "application", "checkout", "payment"],
+  "active": true
+}
+```
+
+### Catalog: IT Services
+
+| Method | Path | Roles | Body | Success |
+|---|---|---|---|---|
+| GET | `/api/services` | Any | `?includeInactive=true` (ADMIN only) | `200` ServiceResponse[] |
+| GET | `/api/services/{id}` | Any | – | `200` ServiceResponse |
+| POST | `/api/services` | ADMIN | ServiceRequest | `201` ServiceResponse |
+| PUT | `/api/services/{id}` | ADMIN | ServiceRequest | `200` ServiceResponse |
+| PATCH | `/api/services/{id}/activate` | ADMIN | – | `200` ServiceResponse |
+| PATCH | `/api/services/{id}/deactivate` | ADMIN | – | `200` ServiceResponse |
+
+**ServiceRequest** (`defaultCategoryId` optional; `null` removes it)
+
+```json
+{
+  "name": "Video Conferencing",
+  "description": "Company-wide video meetings",
+  "criticality": "HIGH",
+  "defaultCategoryId": 8
+}
+```
+
+**ServiceResponse**
+
+```json
+{
+  "id": 1,
+  "name": "Payment Gateway",
+  "description": "Online payment processing for customers",
+  "criticality": "CRITICAL",
+  "defaultCategory": { "id": 8, "code": "APPLICATION", "name": "Application" },
+  "active": true
+}
+```
+
+`defaultCategory` is `null` when not set. It is used to pre-select the category when reporting an incident
+against this service.
+
+### Catalog: Skills
+
+| Method | Path | Roles | Body | Success |
+|---|---|---|---|---|
+| GET | `/api/skills` | Any | `?includeInactive=true` (ADMIN only) | `200` SkillResponse[] |
+| GET | `/api/skills/{id}` | Any | – | `200` SkillResponse |
+| POST | `/api/skills` | ADMIN | SkillRequest | `201` SkillResponse |
+| PUT | `/api/skills/{id}` | ADMIN | SkillRequest | `200` SkillResponse |
+| PATCH | `/api/skills/{id}/activate` | ADMIN | – | `200` SkillResponse |
+| PATCH | `/api/skills/{id}/deactivate` | ADMIN | – | `200` SkillResponse |
+
+**SkillRequest** `{ "name": "Kubernetes Operations", "description": "...", "categoryId": 5 }` (`categoryId` required)
+
+**SkillResponse**
+
+```json
+{
+  "id": 9,
+  "name": "Payment Systems",
+  "description": null,
+  "category": { "id": 8, "code": "APPLICATION", "name": "Application" },
+  "active": true
+}
+```
+
+Assign skills to a technician with `PUT /api/users/{id}/skills`. Inactive skills stay on profiles but are ignored
+by skill-based assignment.
+
+### Catalog: SLA Policies (ADMIN only)
+
+Two levels: a **DEFAULT** policy per priority (`service` = `null`), and optional **SERVICE** overrides. The
+effective SLA for an incident is the service override if one exists, otherwise the default.
+
+| Method | Path | Body / params | Success |
+|---|---|---|---|
+| GET | `/api/sla-policies` | optional `?serviceId=1` (only that service's overrides) | `200` SlaPolicyResponse[] (defaults first, then by service, then priority) |
+| GET | `/api/sla-policies/effective` | `?priority=P1` (required) `&serviceId=1` (optional) | `200` EffectiveSla |
+| POST | `/api/sla-policies` | SlaPolicyCreateRequest | `201` SlaPolicyResponse |
+| PUT | `/api/sla-policies/{id}` | `{ "responseMinutes": 10, "resolutionMinutes": 60 }` | `200` SlaPolicyResponse |
+| DELETE | `/api/sla-policies/{id}` | – | `204`; deleting a DEFAULT policy gives `422 BUSINESS_RULE_VIOLATION` |
+
+**SlaPolicyCreateRequest** (`serviceId` null = DEFAULT policy)
+
+```json
+{ "serviceId": 4, "priority": "P1", "responseMinutes": 10, "resolutionMinutes": 60 }
+```
+
+Rules: `responseMinutes` 1–10080 (7 days), `resolutionMinutes` 1–43200 (30 days), and resolution must be at least
+response (else `400 INVALID_REQUEST`). Only one policy per (service, priority): a second gives
+`409 DUPLICATE_RESOURCE`.
+
+**SlaPolicyResponse**
+
+```json
+{
+  "id": 5,
+  "scope": "SERVICE",
+  "service": { "id": 1, "name": "Payment Gateway", "criticality": "CRITICAL" },
+  "priority": "P1",
+  "responseMinutes": 5,
+  "resolutionMinutes": 20
+}
+```
+
+`scope` is `"DEFAULT"` (then `service` is `null`) or `"SERVICE"`.
+
+**EffectiveSla**
+
+```json
+{ "policyId": 5, "scope": "SERVICE", "priority": "P1", "responseMinutes": 5, "resolutionMinutes": 20 }
+```
+
+`404` if `serviceId` is unknown; `422 SLA_CONFIGURATION_MISSING` if not even a default exists.
+
+## Demo data
+
+Seeded on first start when the tables are empty.
+
+**Catalog**
+- Categories: HARDWARE, SOFTWARE, NETWORK, DATABASE, CLOUD, SECURITY, AUTHENTICATION, APPLICATION, STORAGE.
+- Services (criticality → default category):
+  - Payment Gateway (CRITICAL → APPLICATION)
+  - Customer Database (CRITICAL → DATABASE)
+  - Single Sign-On (SSO) (CRITICAL → AUTHENTICATION)
+  - Corporate Email (HIGH → APPLICATION)
+  - VPN (HIGH → NETWORK)
+  - Office Network & Wi-Fi (MEDIUM → NETWORK)
+  - Cloud File Storage (MEDIUM → STORAGE)
+  - HR Portal (LOW → APPLICATION)
+  - Employee Laptops & Desktops (LOW → HARDWARE)
+- Default SLAs (response / resolution): P1 5 min / 30 min, P2 15 min / 2 h, P3 1 h / 8 h, P4 4 h / 24 h.
+- Payment Gateway overrides: P1 5 min / 20 min, P2 10 min / 60 min.
+
+**Technician skills**
+- Ravi: Routing, Switching & Wi-Fi; VPN & Firewalls; AWS Cloud Operations
+- Fatima: Payment Systems; Web Application Support; PostgreSQL Administration
+- Sneha: SSO & Active Directory; Security Incident Response; Web Application Support
+- Arjun: Desktop & Laptop Support; OS & Software Installation; Cloud Storage & Backup
+
+### Demo accounts (seeded on first start, password `Password@123` for all)
 
 | Role | Email |
 |---|---|
@@ -222,6 +420,8 @@ Technician defaults: `senior=false`, `maxActiveIncidents=5` (1–50), `experienc
 
 ## Changelog
 
+- **Phase 2:** catalog endpoints (categories, services, skills, SLA policies), `skills` on technician
+  UserResponse, `PUT /api/users/{id}/skills`, error code `SLA_CONFIGURATION_MISSING`.
 - **Phase 1.1:** stricter email validation on register/create user (matches frontend rule); clarified update rules
   for `phone` / `department`.
 - **Phase 1:** login/register (JWT), users self-service and admin management, new 401 codes
