@@ -1,5 +1,4 @@
-// Controls under a paged table: total count, page size, "Page X of Y", prev/next.
-// page is 0-based (like the API); the label shows it 1-based for people.
+// Paging controls. page is 0-based like the API; people see it 1-based.
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {

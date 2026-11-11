@@ -1,6 +1,4 @@
-// "Are you sure?" dialog for actions like deactivating a user.
-// onConfirm may be async: the button shows progress, the dialog closes on
-// success and stays open if it throws (the caller shows the error toast).
+// "Are you sure?" dialog. Stays open until onConfirm finishes, and stays open if it fails.
 import { useState } from 'react'
 import {
   AlertDialog,
@@ -26,13 +24,13 @@ export function ConfirmDialog({
   const [pending, setPending] = useState(false)
 
   async function handleConfirm(event) {
-    event.preventDefault() // keep the dialog open until the action finishes
+    event.preventDefault() // don't close yet
     setPending(true)
     try {
       await onConfirm?.()
       onOpenChange(false)
     } catch {
-      // stay open; the caller has already reported the error
+      // the caller has already shown the error
     } finally {
       setPending(false)
     }

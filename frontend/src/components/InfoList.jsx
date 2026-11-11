@@ -1,6 +1,4 @@
-// A tidy list of label/value pairs (an HTML <dl>), used for profile details.
-//   <InfoList items={[{ label: 'Department', value: 'Finance' }]} />
-// Items with value === undefined are skipped; use '—' to show "not set".
+// Label/value pairs for details panels.
 import { cn } from '@/lib/utils'
 
 export function InfoList({ items, className }) {

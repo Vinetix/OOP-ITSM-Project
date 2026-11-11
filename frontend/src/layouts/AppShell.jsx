@@ -1,7 +1,5 @@
-// The frame around every signed-in page: a top bar across the full width,
-// the track sidebar on the left (a slide-out sheet on phones), and the page.
-// Everything role-specific (colour, home, navigation) comes from config/,
-// so the same shell renders three visibly different interfaces.
+// The frame around every signed-in page: top bar, track sidebar (a sheet on
+// phones) and the page. Role colour, home and menu all come from config/.
 import { useState } from 'react'
 import { Menu } from 'lucide-react'
 import { Link, Outlet } from 'react-router'
@@ -22,7 +20,6 @@ export function AppShell() {
 
   return (
     <div className="min-h-svh">
-      {/* Top bar. The thin line in the role colour marks whose interface this is. */}
       <header className="sticky top-0 z-40 border-t-[3px] border-b border-t-role border-b-sidebar-border bg-background/90 backdrop-blur">
         <div className="flex h-14 items-center gap-3 px-3 sm:px-5">
           <Button
@@ -48,13 +45,11 @@ export function AppShell() {
       </header>
 
       <div className="flex">
-        {/* Desktop sidebar */}
         <aside className="sticky top-[60px] hidden h-[calc(100svh-60px)] w-72 shrink-0 flex-col justify-between overflow-y-auto border-r border-sidebar-border bg-sidebar px-3 py-5 lg:flex">
           <SidebarNav role={user.role} />
           <BackendStatus className="mx-2 mt-6 self-start" />
         </aside>
 
-        {/* Mobile menu: the same navigation in a slide-out sheet */}
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetContent side="left" className="w-72 gap-0 bg-sidebar p-0">
             <div className="border-b border-sidebar-border px-5 py-4">

@@ -1,5 +1,4 @@
-// Shown when a list has nothing in it. Say what is missing and what to do next.
-//   <EmptyState icon={Users} title="No users match" description="..." action={<Button/>} />
+// For an empty list: say what's missing and what to do next.
 import { cn } from '@/lib/utils'
 
 export function EmptyState({ icon: Icon, title, description, action, className }) {

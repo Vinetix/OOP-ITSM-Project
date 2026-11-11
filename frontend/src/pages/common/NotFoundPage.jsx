@@ -7,8 +7,8 @@ export default function NotFoundPage() {
   return (
     <StatusScreen lit={false} code={404} title="There’s no page at this address">
       <p>
-        Nothing lives at <span className="font-semibold break-all text-foreground">{pathname}</span>.
-        Check the address, or head back to your home page.
+        Nothing lives at <span className="font-semibold break-all text-foreground">{pathname}</span>
+        . Check the address, or head back to your home page.
       </p>
     </StatusScreen>
   )

@@ -1,6 +1,4 @@
-// Small indicator that pings GET /api/system/info:
-// green "Server online" or red "Server offline". Re-checks every 30 seconds
-// and when the user clicks it, so it recovers once the backend is started.
+// Pings the server every 30 seconds (or on click) and shows whether it's up.
 import { useCallback, useEffect, useState } from 'react'
 import { systemApi } from '@/api/systemApi'
 import { cn } from '@/lib/utils'
@@ -21,7 +19,6 @@ export function BackendStatus({ className }) {
   }, [])
 
   useEffect(() => {
-    // first check right away, then on a timer
     const first = setTimeout(check, 0)
     const timer = setInterval(check, RECHECK_MS)
     return () => {

@@ -1,8 +1,10 @@
-// Client-side validation that mirrors the backend's rules (API contract 6.3).
-// Each rule returns an error message, or undefined when the value is fine.
-// The server still validates everything; its fieldErrors are shown too.
+// The same rules the backend applies, checked before sending. Each rule
+// returns an error message, or nothing when the value is fine.
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+// name@domain.tld: no spaces, no leading, trailing or double dots, domain parts
+// can't start or end with "-", and the ending is at least two letters.
+const EMAIL_PATTERN =
+  /^(?!\.)(?!.*\.\.)[A-Za-z0-9._%+-]+(?<!\.)@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,}$/
 const PHONE_PATTERN = /^[0-9+\-() ]{7,20}$/
 
 export const rules = {
@@ -19,12 +21,18 @@ export const rules = {
     if (!EMAIL_PATTERN.test(v)) return 'Enter a valid email address, like name@itsm.com'
   },
 
-  /** For login: only checks that something was typed. */
+  // login only: old accounts may predate the strict rule, so let the server decide
+  emailShape(value = '') {
+    const v = value.trim()
+    if (!v) return 'Enter your email address'
+    if (!/^\S+@\S+$/.test(v)) return 'Enter your email address, like name@itsm.com'
+  },
+
+  // login only checks that something was typed
   passwordPresent(value = '') {
     if (!value) return 'Enter your password'
   },
 
-  /** For new passwords: the full strength rules. */
   newPassword(value = '') {
     if (!value) return 'Enter a password'
     if (value.length < 8 || value.length > 72) return 'Use 8 to 72 characters'
@@ -33,22 +41,17 @@ export const rules = {
     }
   },
 
-  /** Optional: empty is fine. */
   phone(value = '') {
     const v = value.trim()
     if (v && !PHONE_PATTERN.test(v)) return 'Use 7–20 digits, spaces or + - ( )'
   },
 
-  /** Optional: empty is fine. */
   department(value = '') {
     if (value.trim().length > 100) return 'Use 100 characters or fewer'
   },
 }
 
-/**
- * Runs a rule per field and returns only the failures.
- *   validate({ email: 'x' }, { email: rules.email }) → { email: 'Enter a valid…' }
- */
+// validate({ email: 'x' }, { email: rules.email }) → { email: 'Enter a valid…' }
 export function validate(values, ruleMap) {
   const errors = {}
   for (const [field, rule] of Object.entries(ruleMap)) {
@@ -58,13 +61,12 @@ export function validate(values, ruleMap) {
   return errors
 }
 
-/** Trimmed text, or undefined when empty (so optional fields are left out of the request). */
+// Empty optional fields become undefined, so they're left out of the request.
 export function optionalText(value) {
   const v = (value ?? '').trim()
   return v === '' ? undefined : v
 }
 
-/** Moves keyboard focus to the first field with an error. */
 export function focusFirstError(errors) {
   const first = Object.keys(errors)[0]
   if (first) document.getElementById(first)?.focus()

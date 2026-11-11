@@ -196,7 +196,9 @@ Paged endpoints accept `?page=0&size=20&sort=createdAt,desc` (`page` is 0-based)
 Validation rules (mirror them client-side, but always display server `fieldErrors` too):
 
 - `fullName`: required, max 100.
-- `email`: required, valid email, max 150.
+- `email`: required, max 150, and must match the backend's regex
+  `^[A-Za-z0-9_%+-]+(\.[A-Za-z0-9_%+-]+)*@([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,}$`
+  (message: "Enter a valid email address, like name@itsm.com"). Any domain is allowed.
 - `password`: 8–72 characters, at least one letter and one digit.
 - `phone` (optional): 7–20 characters of digits, spaces, `+ - ( )`.
 - `department` (optional): max 100.
@@ -250,7 +252,9 @@ There is **no delete**; users are deactivated instead.
 - TECHNICIAN uses `senior` (default false), `maxActiveIncidents` (1–50, default 5), `experienceYears` (0–60, default 0).
 - ADMIN uses only the common fields.
 
-**UpdateUserRequest** (role and email cannot change; omitted/null role-specific fields keep their value)
+**UpdateUserRequest** (role and email cannot change). `phone` is always overwritten: `null` or `""` clears it.
+`department`: `null` keeps the current value, `""` clears it (send `""` when the box is emptied). Technician fields:
+`null` keeps the current value.
 
 ```json
 {

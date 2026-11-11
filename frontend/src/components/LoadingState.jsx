@@ -1,5 +1,4 @@
-// Loading indicator: three signal lamps lighting in turn.
-// fullPage centres it on the screen (used while the session is restored).
+// Three lamps lighting in turn while something loads.
 import { cn } from '@/lib/utils'
 
 export function LoadingState({ label = 'Loading', fullPage = false, className }) {

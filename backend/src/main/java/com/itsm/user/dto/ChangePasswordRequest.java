@@ -10,7 +10,7 @@ public record ChangePasswordRequest(
         @NotBlank String currentPassword,
 
         @Schema(example = "NewPassword@456")
-        @NotBlank @Size(min = PasswordRules.MIN_LENGTH, max = PasswordRules.MAX_LENGTH)
-        @Pattern(regexp = PasswordRules.PATTERN, message = PasswordRules.MESSAGE) String newPassword
+        @NotBlank @Size(min = ValidationRules.PASSWORD_MIN_LENGTH, max = ValidationRules.PASSWORD_MAX_LENGTH)
+        @Pattern(regexp = ValidationRules.PASSWORD_PATTERN, message = ValidationRules.PASSWORD_MESSAGE) String newPassword
 ) {
 }

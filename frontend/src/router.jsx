@@ -1,11 +1,9 @@
-// All routes in one place.
-//
-//  /                     → redirect to the role home (or /login)
-//  /login, /register     → only when logged out (GuestRoute), inside AuthLayout
-//  /employee/...         → EMPLOYEE only  ┐
-//  /technician/...       → TECHNICIAN only├ inside AppShell; built from NAVIGATION
-//  /admin/...            → ADMIN only     ┘
-//  /forbidden, *         → anyone
+// Every route in the app.
+//   /login, /register   signed-out only
+//   /employee/...       employees    ┐
+//   /technician/...     technicians  ├ inside the app shell, built from NAVIGATION
+//   /admin/...          admins       ┘
+//   /forbidden, *       anyone
 import { createBrowserRouter, Navigate } from 'react-router'
 import App from './App'
 import { useAuth } from '@/auth/AuthContext'
@@ -28,8 +26,7 @@ import ProfilePage from '@/pages/common/ProfilePage'
 import EmployeeHomePage from '@/pages/employee/EmployeeHomePage'
 import TechnicianHomePage from '@/pages/technician/TechnicianHomePage'
 
-// Pages that exist today. Any nav item not listed here (or marked soon)
-// gets the ComingSoonPage automatically.
+// Pages built so far. Any other nav item gets the Coming Soon page.
 const PAGES = {
   '/employee': <EmployeeHomePage />,
   '/employee/profile': <ProfilePage />,
@@ -40,7 +37,6 @@ const PAGES = {
   '/admin/profile': <ProfilePage />,
 }
 
-/** One role's section: guard → shell → one route per nav item. */
 function roleSection(role) {
   const home = ROLE_CONFIG[role].home
   return {
@@ -63,7 +59,6 @@ function roleSection(role) {
   }
 }
 
-/** "/" sends people to the right starting point. */
 function RootRedirect() {
   const { status, user } = useAuth()
   if (status === 'loading') return <LoadingState fullPage label="Restoring your session" />
@@ -72,7 +67,7 @@ function RootRedirect() {
 
 export const router = createBrowserRouter([
   {
-    element: <App />, // provides AuthContext and toasts to every route
+    element: <App />,
     children: [
       { path: '/', element: <RootRedirect /> },
       {

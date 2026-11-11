@@ -1,4 +1,4 @@
-// The I-ITSM mark (three signal lamps on a track) plus the product name.
+// The I-ITSM mark and name.
 import { cn } from '@/lib/utils'
 
 export function Wordmark({ className }) {

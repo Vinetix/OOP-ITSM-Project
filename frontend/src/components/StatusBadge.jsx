@@ -1,5 +1,4 @@
-// A lamp plus a word, for states such as Active / Inactive / Available.
-// Add new statuses (e.g. incident states in Phase F2) to STATUSES below.
+// A lamp plus a word: Active, Inactive, Available... Add new states to STATUSES.
 import { cn } from '@/lib/utils'
 import { Lamp } from './Lamp'
 

@@ -1,6 +1,5 @@
-// Add or edit a user. Matches CreateUserRequest / UpdateUserRequest in the API
-// contract: email and role are fixed after creation, department is for
-// employees only, and technicians get seniority, experience and workload.
+// Add or edit a user. Email and role are fixed after creation; department is
+// for employees only; technicians get seniority, experience and workload.
 import { useState } from 'react'
 import { CircleAlert } from 'lucide-react'
 import { toast } from 'sonner'

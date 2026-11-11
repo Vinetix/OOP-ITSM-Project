@@ -1,5 +1,4 @@
-// Top-bar account menu: avatar with initials, name, and a dropdown
-// with Profile and Log out.
+// Account menu in the top bar: Profile and Log out.
 import { ChevronDown, LogOut, UserRound } from 'lucide-react'
 import { Link } from 'react-router'
 import { useAuth } from '@/auth/AuthContext'

@@ -1,5 +1,4 @@
-// Read-only view of one user. Shows the row we already have straight away,
-// then refreshes it from GET /api/users/{id}.
+// One user's details. Shows the row we have, then refreshes it from the server.
 import { useEffect, useState } from 'react'
 import { usersApi } from '@/api/usersApi'
 import { InfoList } from '@/components/InfoList'

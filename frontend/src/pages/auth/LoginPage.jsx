@@ -1,5 +1,4 @@
-// Sign-in form. On success AuthContext stores the session and GuestRoute
-// redirects to the role home (or the page the user originally wanted).
+// Sign in. Once the session exists, GuestRoute takes care of the redirect.
 import { useState } from 'react'
 import { CircleAlert } from 'lucide-react'
 import { Link } from 'react-router'
@@ -7,21 +6,24 @@ import { useAuth } from '@/auth/AuthContext'
 import { FormField } from '@/components/FormField'
 import { PasswordInput } from '@/components/PasswordInput'
 import { RoleBadge } from '@/components/RoleBadge'
+import { usePageTitle } from '@/hooks/usePageTitle'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { getErrorMessage, getFieldErrors } from '@/lib/errors'
 import { focusFirstError, rules, validate } from '@/lib/validation'
 
 const DEMO_PASSWORD = 'Password@123'
+// No names here: they can be edited in the app, and this list can't see that.
 const DEMO_ACCOUNTS = [
-  { role: 'ADMIN', name: 'Anita Rao', email: 'admin@itsm.com' },
-  { role: 'TECHNICIAN', name: 'Ravi Kumar', email: 'ravi.kumar@itsm.com' },
-  { role: 'EMPLOYEE', name: 'Rahul Verma', email: 'rahul.verma@itsm.com' },
+  { role: 'ADMIN', email: 'admin@itsm.com', does: 'Manages users and settings' },
+  { role: 'TECHNICIAN', email: 'ravi.kumar@itsm.com', does: 'Works on assigned incidents' },
+  { role: 'EMPLOYEE', email: 'rahul.verma@itsm.com', does: 'Reports IT problems' },
 ]
 
-const LOGIN_RULES = { email: rules.email, password: rules.passwordPresent }
+const LOGIN_RULES = { email: rules.emailShape, password: rules.passwordPresent }
 
 export default function LoginPage() {
+  usePageTitle('Sign in')
   const { login } = useAuth()
   const [values, setValues] = useState({ email: '', password: '' })
   const [errors, setErrors] = useState({})
@@ -53,11 +55,10 @@ export default function LoginPage() {
     setFormError(null)
     try {
       await login(values.email.trim(), values.password)
-      // no navigate() needed: GuestRoute sees the new session and redirects
     } catch (error) {
       const fieldErrors = getFieldErrors(error)
       if (Object.keys(fieldErrors).length) setErrors(fieldErrors)
-      else setFormError(getErrorMessage(error)) // wrong password, disabled account, offline…
+      else setFormError(getErrorMessage(error))
       setSubmitting(false)
     }
   }
@@ -103,7 +104,10 @@ export default function LoginPage() {
 
         <p className="text-center text-sm text-muted-foreground">
           New here?{' '}
-          <Link to="/register" className="font-semibold text-foreground underline underline-offset-4">
+          <Link
+            to="/register"
+            className="font-semibold text-foreground underline underline-offset-4"
+          >
             Create an employee account
           </Link>
         </p>
@@ -128,10 +132,8 @@ export default function LoginPage() {
               >
                 <RoleBadge role={account.role} className="w-20 justify-center" />
                 <span className="min-w-0 flex-1">
-                  <span className="block font-semibold">{account.name}</span>
-                  <span className="block truncate text-sm text-muted-foreground">
-                    {account.email}
-                  </span>
+                  <span className="block truncate font-semibold">{account.email}</span>
+                  <span className="block text-sm text-muted-foreground">{account.does}</span>
                 </span>
                 <span className="text-sm font-semibold text-muted-foreground">Use</span>
               </button>

@@ -2,24 +2,12 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/*
-  I-ITSM theme: "signal box".
-  Pale enamel panels, ink text, hairline rules, and coloured "lamps" for status.
-  shadcn components read the variables below (--background, --primary, ...),
-  so changing a value here restyles every component at once.
-*/
+/* I-ITSM theme: pale enamel panels, ink text and coloured signal lamps. */
 
-/* Dark styles only apply inside an element with class="dark".
-   Without this line Tailwind would follow the operating system's dark mode
-   and half-darken some components. */
+/* dark: styles only inside class="dark", never from the OS setting */
 @custom-variant dark (&:is(.dark *));
 
-/* ---------- Role accent ----------
-   The app shell sets data-role on <html> after login, e.g. data-role="ADMIN".
-   Everything that uses "primary" (buttons, switches, focus rings, the active
-   sidebar lamp) then takes that role's colour automatically.
-   It lives on <html> (not a wrapper div) so dialogs and menus, which React
-   renders at the end of <body>, get the colour too. */
+/* The accent follows the signed-in role. It lives on <html> so dialogs get it too. */
 :root {
   --role: #2b332f;             /* signed out: neutral ink */
 }
@@ -69,7 +57,7 @@
   --lamp-stop: #c2362f;        /* offline, inactive */
   --lamp-off: #a3aaa1;         /* unlit / not applicable */
 
-  /* Charts (used from Phase F2 onwards) */
+  /* Charts, from Phase F2 */
   --chart-1: #1f5fad;
   --chart-2: #0e7c78;
   --chart-3: #3b3f9e;
@@ -87,8 +75,7 @@
   --sidebar-ring: var(--role);
 }
 
-/* Expose the variables as Tailwind classes: bg-card, text-muted-foreground,
-   bg-lamp-go, bg-role, bg-role-soft, rounded-lg, font-sans ... */
+/* Make the variables available as Tailwind classes (bg-card, bg-lamp-go, ...) */
 @theme inline {
   --font-sans: "Overpass", "Segoe UI", system-ui, sans-serif;
   --font-heading: "Overpass", "Segoe UI", system-ui, sans-serif;
@@ -173,7 +160,7 @@
   }
 }
 
-/* Respect "reduce motion" in the operating system's accessibility settings */
+/* Honour the OS "reduce motion" setting */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -182,9 +169,7 @@
   }
 }
 
-
-/* Outline buttons usually sit on cards: give them the card surface instead of
-   the page grey (hover and open states keep shadcn's own colours). */
+/* Outline buttons sit on cards, so give them the card surface, not page grey. */
 [data-slot="button"][data-variant="outline"]:not(:hover):not([aria-expanded="true"]) {
   background-color: var(--card);
 }

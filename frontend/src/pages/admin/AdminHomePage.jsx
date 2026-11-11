@@ -1,5 +1,4 @@
-// Admin dashboard: live user counts, the technicians and whether they can
-// take work, and shortcuts to every admin section (most arrive in later phases).
+// Admin dashboard: user counts, technician availability, and the admin sections.
 import { ArrowRight, Users } from 'lucide-react'
 import { Link } from 'react-router'
 import { usersApi } from '@/api/usersApi'
@@ -16,7 +15,7 @@ import { NAVIGATION } from '@/config/navigation'
 import { useAsync } from '@/hooks/useAsync'
 import { cn } from '@/lib/utils'
 
-// Each count is one request with size=1: we only need totalElements.
+// size=1: we only need totalElements
 async function loadCounts() {
   const count = (filters) => usersApi.list({ ...filters, size: 1 }).then((p) => p.totalElements)
   const [employees, technicians, admins, inactive] = await Promise.all([
@@ -28,12 +27,26 @@ async function loadCounts() {
   return { employees, technicians, admins, inactive }
 }
 
-// Each tile links to the Users page with the matching filter applied.
 const COUNT_TILES = [
-  { key: 'employees', label: 'Employees', lamp: 'bg-employee text-employee', to: '/admin/users?role=EMPLOYEE' },
-  { key: 'technicians', label: 'Technicians', lamp: 'bg-technician text-technician', to: '/admin/users?role=TECHNICIAN' },
+  {
+    key: 'employees',
+    label: 'Employees',
+    lamp: 'bg-employee text-employee',
+    to: '/admin/users?role=EMPLOYEE',
+  },
+  {
+    key: 'technicians',
+    label: 'Technicians',
+    lamp: 'bg-technician text-technician',
+    to: '/admin/users?role=TECHNICIAN',
+  },
   { key: 'admins', label: 'Admins', lamp: 'bg-admin text-admin', to: '/admin/users?role=ADMIN' },
-  { key: 'inactive', label: 'Inactive users', lamp: 'bg-lamp-stop text-lamp-stop', to: '/admin/users?active=false' },
+  {
+    key: 'inactive',
+    label: 'Inactive users',
+    lamp: 'bg-lamp-stop text-lamp-stop',
+    to: '/admin/users?active=false',
+  },
 ]
 
 const SECTION_DESCRIPTIONS = {
@@ -53,7 +66,7 @@ function CountsPanel() {
 
   return (
     <Card className="py-0">
-      {/* 2×2 on phones, one row of 4 on laptops, with hairline rules between tiles */}
+      {/* 2×2 on phones, 4 in a row on laptops */}
       <ul className="grid grid-cols-2 lg:grid-cols-4">
         {COUNT_TILES.map((tile, i) => (
           <li
@@ -94,10 +107,12 @@ function CountsPanel() {
 }
 
 function TechniciansCard() {
-  const { data: technicians, error, loading, reload } = useAsync(
-    () => usersApi.listTechnicians(),
-    [],
-  )
+  const {
+    data: technicians,
+    error,
+    loading,
+    reload,
+  } = useAsync(() => usersApi.listTechnicians(), [])
 
   return (
     <Card>

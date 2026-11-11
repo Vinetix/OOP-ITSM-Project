@@ -1,6 +1,5 @@
-// Sidebar items per role. The router also builds its routes from this list,
-// so adding a page = one entry here + (if it is real) one page in router.jsx.
-// soon: true → shown with a "Soon" marker and routed to ComingSoonPage.
+// Sidebar items per role. The router builds its routes from this list too.
+// Items marked soon lead to the Coming Soon page.
 import {
   Bell,
   ChartColumn,

@@ -1,5 +1,4 @@
-// Guard for every page that needs a logged-in user.
-// Not logged in → /login, remembering where they were going.
+// Signed-in users only. Others go to /login, which remembers where they were heading.
 import { Navigate, Outlet, useLocation } from 'react-router'
 import { LoadingState } from '@/components/LoadingState'
 import { useAuth } from './AuthContext'

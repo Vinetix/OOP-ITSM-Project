@@ -1,21 +1,13 @@
-// The single Axios instance used by every API module.
-// - Base URL comes from .env (VITE_API_BASE_URL).
-// - A request interceptor attaches "Authorization: Bearer <token>".
-// - A response interceptor reacts to 401s: the session is cleared and the
-//   app is told, so it can redirect to /login.
+// The one Axios instance every API module uses. It adds the token to each
+// request and ends the session when the server answers 401.
 import axios from 'axios'
 
 const TOKEN_KEY = 'itsm.accessToken'
 
-// Paths that must never send a token and never trigger "session expired".
+// Never send a token to these, and never treat their 401 as "session expired".
 const PUBLIC_PATHS = ['/api/auth/login', '/api/auth/register', '/api/system/info']
 
-/*
-  Token storage. localStorage keeps you logged in across refreshes.
-  Trade-off: any script running on the page (an XSS bug) could read it;
-  an httpOnly cookie would be safer but needs backend support. Acceptable
-  for this course project. Only this file touches localStorage.
-*/
+// Kept in localStorage so a refresh doesn't log you out. Only this file touches it.
 export const tokenStorage = {
   get() {
     try {
@@ -28,7 +20,7 @@ export const tokenStorage = {
     try {
       localStorage.setItem(TOKEN_KEY, token)
     } catch {
-      // Storage blocked (e.g. strict private mode): the session lasts until refresh.
+      // storage blocked (strict private mode): the session lasts until refresh
     }
   },
   clear() {
@@ -40,8 +32,7 @@ export const tokenStorage = {
   },
 }
 
-// AuthContext registers a function here so this file never needs to import
-// React or the router. (The API layer stays independent of the UI layer.)
+// AuthContext plugs a function in here, so this file never imports React.
 let unauthorizedHandler = null
 
 export function setUnauthorizedHandler(handler) {

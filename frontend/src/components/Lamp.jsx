@@ -1,7 +1,5 @@
-// A signal lamp: the small coloured dot used for every status in the app.
-// lit = solid with a soft halo; unlit = hollow ring.
-// One tone, one meaning: go (active/online/available), caution (soon/warning),
-// stop (inactive/offline), off (not applicable), role (current role colour).
+// The status dot used everywhere. One colour, one meaning:
+// go = active/online/available, caution = soon, stop = inactive/offline, off = n/a.
 import { cn } from '@/lib/utils'
 
 const TONES = {

@@ -2,7 +2,6 @@ package com.itsm.user.dto;
 
 import com.itsm.user.Role;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -22,14 +21,15 @@ public record CreateUserRequest(
         @NotBlank @Size(max = 100) String fullName,
 
         @Schema(example = "meera.iyer@itsm.com")
-        @NotBlank @Email @Size(max = 150) String email,
+        @NotBlank @Size(max = ValidationRules.EMAIL_MAX_LENGTH)
+        @Pattern(regexp = ValidationRules.EMAIL_PATTERN, message = ValidationRules.EMAIL_MESSAGE) String email,
 
         @Schema(example = "Password@123")
-        @NotBlank @Size(min = PasswordRules.MIN_LENGTH, max = PasswordRules.MAX_LENGTH)
-        @Pattern(regexp = PasswordRules.PATTERN, message = PasswordRules.MESSAGE) String password,
+        @NotBlank @Size(min = ValidationRules.PASSWORD_MIN_LENGTH, max = ValidationRules.PASSWORD_MAX_LENGTH)
+        @Pattern(regexp = ValidationRules.PASSWORD_PATTERN, message = ValidationRules.PASSWORD_MESSAGE) String password,
 
         @Schema(example = "+91 98765 43210")
-        @Pattern(regexp = PasswordRules.PHONE_PATTERN, message = PasswordRules.PHONE_MESSAGE) String phone,
+        @Pattern(regexp = ValidationRules.PHONE_PATTERN, message = ValidationRules.PHONE_MESSAGE) String phone,
 
         @Schema(example = "Finance", description = "EMPLOYEE only")
         @Size(max = 100) String department,

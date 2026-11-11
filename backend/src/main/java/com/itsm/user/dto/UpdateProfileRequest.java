@@ -11,6 +11,6 @@ public record UpdateProfileRequest(
         @NotBlank @Size(max = 100) String fullName,
 
         @Schema(example = "+91 90000 11111")
-        @Pattern(regexp = PasswordRules.PHONE_PATTERN, message = PasswordRules.PHONE_MESSAGE) String phone
+        @Pattern(regexp = ValidationRules.PHONE_PATTERN, message = ValidationRules.PHONE_MESSAGE) String phone
 ) {
 }

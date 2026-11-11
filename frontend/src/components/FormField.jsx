@@ -1,7 +1,5 @@
-// One labelled form field: label, input, hint and error message, wired up for
-// screen readers (aria-invalid + aria-describedby). Used by every form.
-//   <FormField id="email" label="Email" error={errors.email} value=... onChange=... />
-//   <FormField id="password" label="Password" as={PasswordInput} ... />
+// Label, input, hint and error for one field, connected for screen readers.
+//   <FormField id="email" label="Email" error={errors.email} ... />
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'

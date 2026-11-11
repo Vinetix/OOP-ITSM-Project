@@ -1,5 +1,4 @@
-// Placeholder for sidebar sections whose backend isn't built yet.
-// The router passes the feature name from config/navigation.js.
+// Shown for sidebar sections that arrive in a later phase.
 import { Link } from 'react-router'
 import { useAuth } from '@/auth/AuthContext'
 import { Lamp } from '@/components/Lamp'
@@ -19,8 +18,8 @@ export default function ComingSoonPage({ feature }) {
           <p className="font-semibold">Coming in a later phase</p>
         </div>
         <p className="text-muted-foreground">
-          {feature} will appear here once the backend supports it. Everything else in the
-          sidebar with a lit lamp works today.
+          {feature} will appear here once the backend supports it. Everything else in the sidebar
+          with a lit lamp works today.
         </p>
         <Button asChild variant="outline">
           <Link to={getRoleHome(user.role)}>Back to home</Link>

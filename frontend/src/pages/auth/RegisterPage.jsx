@@ -1,6 +1,4 @@
-// Self-registration. The backend always creates an EMPLOYEE account and
-// returns a session, so on success the user is signed in and GuestRoute
-// takes them to /employee.
+// Self-registration. The backend always creates an employee and signs them in.
 import { useState } from 'react'
 import { CircleAlert } from 'lucide-react'
 import { Link } from 'react-router'
@@ -8,6 +6,7 @@ import { toast } from 'sonner'
 import { useAuth } from '@/auth/AuthContext'
 import { FormField } from '@/components/FormField'
 import { PasswordInput } from '@/components/PasswordInput'
+import { usePageTitle } from '@/hooks/usePageTitle'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { getErrorCode, getErrorMessage, getFieldErrors } from '@/lib/errors'
@@ -24,6 +23,7 @@ const REGISTER_RULES = {
 const EMPTY = { fullName: '', email: '', password: '', phone: '', department: '' }
 
 export default function RegisterPage() {
+  usePageTitle('Create account')
   const { register } = useAuth()
   const [values, setValues] = useState(EMPTY)
   const [errors, setErrors] = useState({})
@@ -36,7 +36,6 @@ export default function RegisterPage() {
     setFormError(null)
   }
 
-  // Shorthand for the props every text field needs.
   function field(name) {
     return {
       id: name,
@@ -62,7 +61,7 @@ export default function RegisterPage() {
         fullName: values.fullName.trim(),
         email: values.email.trim(),
         password: values.password,
-        phone: optionalText(values.phone), // left out of the request when empty
+        phone: optionalText(values.phone),
         department: optionalText(values.department),
       })
       toast.success(`Account created. Welcome, ${user.fullName.split(' ')[0]}.`)
@@ -86,8 +85,8 @@ export default function RegisterPage() {
       <div className="space-y-2">
         <h1 className="text-4xl font-extrabold">Create your account</h1>
         <p className="text-muted-foreground">
-          For employees who need to report IT problems. Technician and admin accounts are
-          created by an admin.
+          For employees who need to report IT problems. Technician and admin accounts are created by
+          an admin.
         </p>
       </div>
 

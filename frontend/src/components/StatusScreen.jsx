@@ -1,14 +1,15 @@
-// Full-page message used by Forbidden and Not Found:
-// a large lamp, a plain explanation, and a way back.
+// Full-page message for Forbidden and Not Found.
 import { Link } from 'react-router'
 import { useAuth } from '@/auth/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Wordmark } from '@/components/Wordmark'
 import { getRoleConfig } from '@/config/roles'
+import { usePageTitle } from '@/hooks/usePageTitle'
 import { cn } from '@/lib/utils'
 import { Lamp } from './Lamp'
 
 export function StatusScreen({ tone, lit = true, code, title, children }) {
+  usePageTitle(title)
   const { user } = useAuth()
   const roleConfig = getRoleConfig(user?.role)
 

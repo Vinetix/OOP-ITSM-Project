@@ -1,4 +1,4 @@
-// A password input with a show/hide button, so people can check what they typed.
+// Password input with a show/hide button.
 import { useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { Input } from '@/components/ui/input'

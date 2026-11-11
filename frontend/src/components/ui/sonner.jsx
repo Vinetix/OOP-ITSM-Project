@@ -1,13 +1,5 @@
-// Toast notifications (wraps the "sonner" library).
-// shadcn's generated version reads the theme from "next-themes"; we have one
-// light theme, so it is replaced with a fixed theme and lamp-coloured icons.
-import {
-  CircleAlert,
-  CircleCheck,
-  Info,
-  LoaderCircle,
-  TriangleAlert,
-} from 'lucide-react'
+// Toasts. Replaces shadcn's version, which needed next-themes; we have one theme.
+import { CircleAlert, CircleCheck, Info, LoaderCircle, TriangleAlert } from 'lucide-react'
 import { Toaster as Sonner } from 'sonner'
 
 function Toaster(props) {

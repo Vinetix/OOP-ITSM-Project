@@ -1,6 +1,5 @@
-// Admin user management: filter, search, page through users and manage them.
-// Filters live in the URL (?role=TECHNICIAN&page=2), so refresh keeps them
-// and the dashboard tiles can link straight to a filtered list.
+// Users list for admins. Filters live in the URL, so refresh keeps them and
+// the dashboard tiles can link straight to a filtered list.
 import { useEffect, useState } from 'react'
 import { Ellipsis, Eye, Pencil, Search, UserCheck, UserPlus, Users, UserX } from 'lucide-react'
 import { useSearchParams } from 'react-router'
@@ -96,7 +95,7 @@ export default function UsersPage() {
     [page, size, role, active, search],
   )
 
-  // Search box: wait until typing pauses before hitting the server.
+  // wait until typing pauses before searching
   const [query, setQuery] = useState(search)
   useEffect(() => {
     const timer = setTimeout(() => {

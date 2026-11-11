@@ -1,7 +1,5 @@
-// The sidebar navigation, drawn as a signal-box track:
-// one line runs through every page (a "station"). The current page's lamp is
-// lit in the role colour; pages that aren't built yet have a dashed, unlit
-// lamp and a "Soon" tag. Used in the desktop sidebar and the mobile menu.
+// Sidebar drawn as a track: one line through every page, the current page's
+// lamp lit in the role colour, unbuilt pages with a dashed lamp and "Soon".
 import { NavLink } from 'react-router'
 import { Lamp } from '@/components/Lamp'
 import { SoonTag } from '@/components/SoonTag'
@@ -16,7 +14,7 @@ export function SidebarNav({ role, onNavigate }) {
   return (
     <nav aria-label="Main">
       <ul className="relative space-y-0.5">
-        {/* the track line, behind the lamps but above row backgrounds */}
+        {/* the track: above row backgrounds, below the lamps */}
         <span
           aria-hidden="true"
           className="absolute top-4 bottom-4 left-[19px] z-10 w-px bg-foreground/20"
@@ -25,7 +23,7 @@ export function SidebarNav({ role, onNavigate }) {
           <li key={item.path}>
             <NavLink
               to={item.path}
-              end={item.path === home} // "Home" is only active on the home page itself
+              end={item.path === home}
               onClick={onNavigate}
               className={({ isActive }) =>
                 cn(
@@ -42,7 +40,7 @@ export function SidebarNav({ role, onNavigate }) {
                 <>
                   <span className="relative z-20 flex size-2.5 items-center justify-center rounded-full bg-sidebar">
                     {isActive ? (
-                      // key={item.path}: the lamp "switches on" each time you arrive
+                      // the key makes the lamp switch on again on every visit
                       <Lamp
                         key={item.path}
                         tone="role"

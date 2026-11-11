@@ -1,14 +1,5 @@
-// Holds the logged-in user for the whole app and exposes login/register/logout.
-// Any component can read it with:  const { user, login, logout } = useAuth()
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+// The signed-in user, shared with the whole app:  const { user, login, logout } = useAuth()
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { authApi } from '@/api/authApi'
@@ -21,17 +12,16 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
-  // 'loading' while we check a saved token, then 'authenticated' or 'anonymous'
+  // 'loading' while a saved token is checked, then 'authenticated' or 'anonymous'
   const [status, setStatus] = useState(() => (tokenStorage.get() ? 'loading' : 'anonymous'))
 
-  // The 401 handler below runs outside React's render cycle, so it reads
-  // the latest status from a ref instead of a stale closure.
+  // the 401 handler runs outside React, so it reads status from a ref
   const statusRef = useRef(status)
   useEffect(() => {
     statusRef.current = status
   }, [status])
 
-  // 1. On app start: if a token was saved, ask the server who it belongs to.
+  // On startup, ask the server who a saved token belongs to.
   useEffect(() => {
     if (!tokenStorage.get()) return
     let cancelled = false
@@ -43,8 +33,7 @@ export function AuthProvider({ children }) {
         setStatus('authenticated')
       })
       .catch(() => {
-        // 401: the interceptor already removed the expired token.
-        // Network error: keep the token so a refresh works once the server is back.
+        // On a network error the token is kept, so a refresh works once the server is back.
         if (!cancelled) setStatus('anonymous')
       })
     return () => {
@@ -52,22 +41,21 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
-  // 2. When any request comes back 401 (token expired or invalid), end the session.
-  //    The route guards then send the user to /login and remember the page.
+  // Any 401 ends the session; the route guards then send the user to /login.
   useEffect(() => {
     setUnauthorizedHandler((error) => {
       const wasRestoring = statusRef.current === 'loading'
       setUser(null)
       setStatus('anonymous')
       if (!wasRestoring) {
-        // id stops several failing requests from stacking identical toasts
+        // the id stops several failed requests stacking identical toasts
         toast.error(getErrorMessage(error), { id: 'session-ended' })
       }
     })
     return () => setUnauthorizedHandler(null)
   }, [])
 
-  // 3. The page accent follows the role: <html data-role="ADMIN"> etc. (see index.css)
+  // The accent colour follows the role (see data-role in index.css).
   useEffect(() => {
     const root = document.documentElement
     if (user?.role) root.dataset.role = user.role
@@ -98,7 +86,6 @@ export function AuthProvider({ children }) {
     navigate('/login', { replace: true })
   }, [navigate])
 
-  /** Re-read the user from the server (e.g. after editing the profile). */
   const refreshMe = useCallback(async () => {
     const me = await usersApi.getMe()
     setUser(me)
@@ -114,7 +101,7 @@ export function AuthProvider({ children }) {
       register,
       logout,
       refreshMe,
-      updateUser: setUser, // when an API call already returned the fresh user
+      updateUser: setUser, // for when an API call already returned the fresh user
     }),
     [user, status, login, register, logout, refreshMe],
   )

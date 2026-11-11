@@ -1,6 +1,6 @@
 # I-ITSM API Contract
 
-Living document, updated every backend phase. Last update: **Phase 1 (security & users)**.
+Living document, updated every backend phase. Last update: **Phase 1.1 (security & users)**.
 Live, always-current docs: `http://localhost:8080/swagger-ui.html` (raw spec: `/v3/api-docs`).
 
 ## Conventions (apply to every endpoint)
@@ -148,8 +148,10 @@ Errors: `400 VALIDATION_FAILED`, `401 AUTHENTICATION_FAILED`, `401 ACCOUNT_DISAB
 }
 ```
 
-Rules: password 8–72 characters with at least one letter and one digit; phone 7–20 characters of digits, `+ - ( )`
-and spaces. Errors: `400 VALIDATION_FAILED`, `409 DUPLICATE_RESOURCE` (email taken).
+Rules (same for `POST /api/users`): email must look like `name@domain.tld` (no spaces, no leading/trailing/double
+dots, domain labels can't start or end with `-`, TLD of 2+ letters; any domain is allowed), max 150 characters;
+password 8–72 characters with at least one letter and one digit; phone 7–20 characters of digits, `+ - ( )` and
+spaces. Invalid email gives `fieldErrors.email = "Enter a valid email address, like name@itsm.com"`. Errors: `400 VALIDATION_FAILED`, `409 DUPLICATE_RESOURCE` (email taken).
 
 ### Users: self-service (any logged-in user)
 
@@ -220,6 +222,8 @@ Technician defaults: `senior=false`, `maxActiveIncidents=5` (1–50), `experienc
 
 ## Changelog
 
+- **Phase 1.1:** stricter email validation on register/create user (matches frontend rule); clarified update rules
+  for `phone` / `department`.
 - **Phase 1:** login/register (JWT), users self-service and admin management, new 401 codes
   (`AUTHENTICATION_FAILED`, `ACCOUNT_DISABLED`, `AUTHENTICATION_REQUIRED`), all non-public endpoints now require a token.
 - **Phase 0:** conventions, error format, `/api/system/info`.

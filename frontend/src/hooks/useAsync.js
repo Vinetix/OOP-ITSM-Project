@@ -1,9 +1,6 @@
-// Loads data when a page opens and tracks loading / error / data for it.
+// Loads data for a page and tracks loading, error and reload.
 //   const { data, error, loading, reload } = useAsync(() => usersApi.listTechnicians(), [])
-// - deps: when any of them change, the data is loaded again (like useEffect).
-// - Answers that arrive after the page moved on are ignored, so a slow old
-//   request can never overwrite a newer one.
-// - On reload the old data stays visible until the new data arrives.
+// A late answer from an old request is ignored, so it can't overwrite newer data.
 import { useCallback, useEffect, useState } from 'react'
 
 export function useAsync(load, deps = []) {
@@ -25,7 +22,7 @@ export function useAsync(load, deps = []) {
 
   const reload = useCallback(() => setReloadCount((n) => n + 1), [])
 
-  /** Replace the loaded data locally, e.g. after an edit returned the new version. */
+  // swap in data we already have, e.g. the row an edit just returned
   const setData = useCallback(
     (update) =>
       setState((prev) => ({

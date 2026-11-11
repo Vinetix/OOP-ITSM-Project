@@ -1,8 +1,9 @@
-// The title block at the top of every page, with optional actions on the right.
-//   <PageHeader title="Users" description="..." actions={<Button>Add user</Button>} />
+// Page title and description, with optional actions on the right.
+import { usePageTitle } from '@/hooks/usePageTitle'
 import { cn } from '@/lib/utils'
 
 export function PageHeader({ title, description, actions, className }) {
+  usePageTitle(title)
   return (
     <header
       className={cn(

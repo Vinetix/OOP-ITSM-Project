@@ -1,6 +1,4 @@
-// Guard for role-specific sections. Used inside ProtectedRoute,
-// so the user is already known to be logged in here.
-// Wrong role → /forbidden.
+// Only the given roles; anyone else sees Forbidden.
 import { Navigate, Outlet } from 'react-router'
 import { useAuth } from './AuthContext'
 

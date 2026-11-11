@@ -1,5 +1,4 @@
-// A failed load: says what went wrong (from the API error) and offers Retry.
-//   <ErrorAlert error={error} onRetry={reload} />
+// A failed load, with the reason and a Retry button.
 import { CircleAlert, RotateCw } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'

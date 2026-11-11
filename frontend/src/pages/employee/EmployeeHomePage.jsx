@@ -1,5 +1,4 @@
-// Employee home: a welcome with their details, the (future) report button,
-// and an empty "My recent incidents" section until incidents exist.
+// Employee home: welcome, details, and (soon) their incidents.
 import { FilePlus, ListTodo } from 'lucide-react'
 import { useAuth } from '@/auth/AuthContext'
 import { EmptyState } from '@/components/EmptyState'

@@ -1,5 +1,4 @@
-// The signed-in user's own profile: edit name and phone, change password,
-// and see the account details only an admin can change.
+// Your own profile: name, phone, password, and what only an admin can change.
 import { useState } from 'react'
 import { CircleAlert } from 'lucide-react'
 import { toast } from 'sonner'
@@ -58,7 +57,7 @@ function DetailsForm() {
         fullName: values.fullName.trim(),
         phone: optionalText(values.phone) ?? null, // null clears the phone
       })
-      updateUser(updated) // top bar and other pages pick up the new name
+      updateUser(updated) // the top bar picks up the new name
       setValues({ fullName: updated.fullName, phone: updated.phone ?? '' })
       toast.success('Profile saved')
     } catch (error) {

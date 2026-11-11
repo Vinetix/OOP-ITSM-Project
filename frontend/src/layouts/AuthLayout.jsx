@@ -1,13 +1,10 @@
-// Layout for /login and /register.
-// Large screens: a panel on the left shows how an incident travels through
-// the system, as stations on a track whose lamps light up one after another.
-// Small screens: just the wordmark above the form.
+// Login/register layout. On wide screens a panel shows an incident's journey
+// as stations on a track, with the lamps lighting one after another.
 import { Outlet } from 'react-router'
 import { BackendStatus } from '@/components/BackendStatus'
 import { Lamp } from '@/components/Lamp'
 import { Wordmark } from '@/components/Wordmark'
 
-// The real lifecycle of an incident, in order (so a sequence is justified here).
 const STATIONS = [
   { name: 'Reported', detail: 'An employee describes what is broken.' },
   { name: 'Prioritised', detail: 'Ranked P1 to P4 by impact and urgency.' },
@@ -18,8 +15,10 @@ const STATIONS = [
 function IncidentTrack() {
   return (
     <ol className="relative space-y-7" aria-label="How an incident is handled">
-      {/* the track: one line through every station */}
-      <span aria-hidden="true" className="absolute top-2 bottom-2 left-[3px] w-px bg-foreground/25" />
+      <span
+        aria-hidden="true"
+        className="absolute top-2 bottom-2 left-[3px] w-px bg-foreground/25"
+      />
       {STATIONS.map((station, i) => (
         <li key={station.name} className="relative flex gap-5">
           <Lamp

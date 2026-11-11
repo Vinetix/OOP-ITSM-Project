@@ -1,5 +1,4 @@
-// Technician home: the availability switch (what decides whether new
-// incidents can be assigned to them), their work profile, and an empty queue.
+// Technician home: the availability switch, work profile and (soon) the queue.
 import { useState } from 'react'
 import { Inbox } from 'lucide-react'
 import { toast } from 'sonner'
@@ -23,16 +22,17 @@ function AvailabilityCard() {
   const [available, setAvailable] = useState(Boolean(user.available))
   const [saving, setSaving] = useState(false)
 
-  // Optimistic update: flip the switch immediately, then ask the server.
-  // If the server refuses, flip it back and explain why.
+  // Flip the switch straight away, then confirm with the server; undo it if that fails.
   async function handleChange(next) {
     setAvailable(next)
     setSaving(true)
     try {
       const updated = await usersApi.setMyAvailability(next)
-      updateUser(updated) // keep AuthContext in step with the server
+      updateUser(updated)
       setAvailable(Boolean(updated.available))
-      toast.success(next ? 'You’re available for new incidents' : 'You won’t be assigned new incidents')
+      toast.success(
+        next ? 'You’re available for new incidents' : 'You won’t be assigned new incidents',
+      )
     } catch (error) {
       setAvailable(!next)
       toast.error(getErrorMessage(error))
@@ -46,8 +46,8 @@ function AvailabilityCard() {
       <CardHeader>
         <CardTitle className="text-lg font-bold">Availability</CardTitle>
         <CardDescription>
-          While you’re unavailable, new incidents go to other technicians. Work already assigned
-          to you stays with you.
+          While you’re unavailable, new incidents go to other technicians. Work already assigned to
+          you stays with you.
         </CardDescription>
       </CardHeader>
       <CardContent>

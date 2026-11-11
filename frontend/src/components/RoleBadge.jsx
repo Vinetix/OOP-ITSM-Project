@@ -1,9 +1,8 @@
-// Shows a role in that role's own colour (blue / teal / indigo),
-// regardless of who is looking: an admin's user table shows all three.
+// A role in its own colour, whoever is looking.
 import { ROLE_CONFIG } from '@/config/roles'
 import { cn } from '@/lib/utils'
 
-// Written out in full so Tailwind can find the class names in the source.
+// spelled out in full so Tailwind can find the class names
 const STYLES = {
   EMPLOYEE: 'border-employee/30 bg-employee/10 text-employee',
   TECHNICIAN: 'border-technician/30 bg-technician/10 text-technician',

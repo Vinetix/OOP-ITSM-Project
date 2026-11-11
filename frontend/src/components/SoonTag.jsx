@@ -1,4 +1,4 @@
-// The small amber "Soon" tag for features that arrive in a later phase.
+// Amber "Soon" tag for features coming in a later phase.
 import { cn } from '@/lib/utils'
 
 export function SoonTag({ className }) {

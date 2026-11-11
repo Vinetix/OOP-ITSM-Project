@@ -16,7 +16,7 @@ public record UpdateUserRequest(
         @NotBlank @Size(max = 100) String fullName,
 
         @Schema(example = "+91 98765 43210")
-        @Pattern(regexp = PasswordRules.PHONE_PATTERN, message = PasswordRules.PHONE_MESSAGE) String phone,
+        @Pattern(regexp = ValidationRules.PHONE_PATTERN, message = ValidationRules.PHONE_MESSAGE) String phone,
 
         @Schema(description = "EMPLOYEE only")
         @Size(max = 100) String department,

@@ -1,5 +1,4 @@
-// Root of every route: makes the auth session and toasts available everywhere.
-// (It sits inside the router so AuthContext can use navigation.)
+// Root of every route. It sits inside the router so AuthContext can navigate.
 import { Outlet } from 'react-router'
 import { AuthProvider } from '@/auth/AuthContext'
 import { Toaster } from '@/components/ui/sonner'
