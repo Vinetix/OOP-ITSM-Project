@@ -16,6 +16,8 @@ import { ROLE_CONFIG, getRoleHome } from '@/config/roles'
 import { AppShell } from '@/layouts/AppShell'
 import { AuthLayout } from '@/layouts/AuthLayout'
 import AdminHomePage from '@/pages/admin/AdminHomePage'
+import CatalogPage from '@/pages/admin/catalog/CatalogPage'
+import SlaPoliciesPage from '@/pages/admin/sla/SlaPoliciesPage'
 import UsersPage from '@/pages/admin/UsersPage'
 import LoginPage from '@/pages/auth/LoginPage'
 import RegisterPage from '@/pages/auth/RegisterPage'
@@ -34,6 +36,8 @@ const PAGES = {
   '/technician/profile': <ProfilePage />,
   '/admin': <AdminHomePage />,
   '/admin/users': <UsersPage />,
+  '/admin/catalog': <CatalogPage />,
+  '/admin/sla-policies': <SlaPoliciesPage />,
   '/admin/profile': <ProfilePage />,
 }
 

@@ -57,6 +57,15 @@
   --lamp-stop: #c2362f;        /* offline, inactive */
   --lamp-off: #a3aaa1;         /* unlit / not applicable */
 
+  /* Tag colours for criticality and priority (tags only, never lamps) */
+  --tone-red: #c2362f;
+  --tone-orange: #cc5f1f;
+  --tone-amber: #b97a12;
+  --tone-yellow: #a3850a;
+  --tone-blue: #2f69ad;
+  --tone-slate: #5f6b74;
+  --tone-grey: #858d87;
+
   /* Charts, from Phase F2 */
   --chart-1: #1f5fad;
   --chart-2: #0e7c78;

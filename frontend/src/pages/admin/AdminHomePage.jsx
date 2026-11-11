@@ -52,8 +52,8 @@ const COUNT_TILES = [
 const SECTION_DESCRIPTIONS = {
   '/admin/incidents': 'Every incident across the organisation.',
   '/admin/users': 'Create accounts, edit details, activate or deactivate.',
-  '/admin/services': 'The IT services incidents are reported against.',
-  '/admin/sla': 'Response and resolution targets per priority.',
+  '/admin/catalog': 'IT services, incident categories and technician skills.',
+  '/admin/sla-policies': 'Response and resolution targets per priority, with service overrides.',
   '/admin/assignment': 'How incidents are routed to technicians.',
   '/admin/reports': 'Volumes, SLA performance and workload.',
   '/admin/audit': 'A record of every action taken.',
