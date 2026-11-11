@@ -1,0 +1,47 @@
+// Sidebar items per role. The router also builds its routes from this list,
+// so adding a page = one entry here + (if it is real) one page in router.jsx.
+// soon: true → shown with a "Soon" marker and routed to ComingSoonPage.
+import {
+  Bell,
+  ChartColumn,
+  FilePlus,
+  Gauge,
+  House,
+  Inbox,
+  Layers,
+  LayoutDashboard,
+  ListTodo,
+  Route,
+  ScrollText,
+  Timer,
+  UserRound,
+  Users,
+} from 'lucide-react'
+
+export const NAVIGATION = {
+  EMPLOYEE: [
+    { label: 'Home', path: '/employee', icon: House },
+    { label: 'Report incident', path: '/employee/report', icon: FilePlus, soon: true },
+    { label: 'My incidents', path: '/employee/incidents', icon: ListTodo, soon: true },
+    { label: 'Notifications', path: '/employee/notifications', icon: Bell, soon: true },
+    { label: 'Profile', path: '/employee/profile', icon: UserRound },
+  ],
+  TECHNICIAN: [
+    { label: 'Home', path: '/technician', icon: House },
+    { label: 'My queue', path: '/technician/queue', icon: Inbox, soon: true },
+    { label: 'Workload', path: '/technician/workload', icon: Gauge, soon: true },
+    { label: 'Notifications', path: '/technician/notifications', icon: Bell, soon: true },
+    { label: 'Profile', path: '/technician/profile', icon: UserRound },
+  ],
+  ADMIN: [
+    { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
+    { label: 'All incidents', path: '/admin/incidents', icon: ListTodo, soon: true },
+    { label: 'Users', path: '/admin/users', icon: Users },
+    { label: 'Services & categories', path: '/admin/services', icon: Layers, soon: true },
+    { label: 'SLA policies', path: '/admin/sla', icon: Timer, soon: true },
+    { label: 'Assignment settings', path: '/admin/assignment', icon: Route, soon: true },
+    { label: 'Reports', path: '/admin/reports', icon: ChartColumn, soon: true },
+    { label: 'Audit log', path: '/admin/audit', icon: ScrollText, soon: true },
+    { label: 'Profile', path: '/admin/profile', icon: UserRound },
+  ],
+}

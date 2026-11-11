@@ -194,7 +194,8 @@ Password change errors: `400 INVALID_REQUEST` ("Current password is incorrect" /
 
 Technician defaults: `senior=false`, `maxActiveIncidents=5` (1–50), `experienceYears=0` (0–60).
 
-**UpdateUserRequest** (role and email cannot change; null role-specific fields keep their current value)
+**UpdateUserRequest** (role and email cannot change). `phone` is always overwritten: `null` or `""` clears it.
+`department`: `null` keeps the current value, `""` clears it. Technician fields: `null` keeps the current value.
 
 ```json
 {

@@ -1,0 +1,190 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+  I-ITSM theme: "signal box".
+  Pale enamel panels, ink text, hairline rules, and coloured "lamps" for status.
+  shadcn components read the variables below (--background, --primary, ...),
+  so changing a value here restyles every component at once.
+*/
+
+/* Dark styles only apply inside an element with class="dark".
+   Without this line Tailwind would follow the operating system's dark mode
+   and half-darken some components. */
+@custom-variant dark (&:is(.dark *));
+
+/* ---------- Role accent ----------
+   The app shell sets data-role on <html> after login, e.g. data-role="ADMIN".
+   Everything that uses "primary" (buttons, switches, focus rings, the active
+   sidebar lamp) then takes that role's colour automatically.
+   It lives on <html> (not a wrapper div) so dialogs and menus, which React
+   renders at the end of <body>, get the colour too. */
+:root {
+  --role: #2b332f;             /* signed out: neutral ink */
+}
+:root[data-role="EMPLOYEE"] {
+  --role: #1f5fad;             /* signal blue */
+}
+:root[data-role="TECHNICIAN"] {
+  --role: #0e7c78;             /* signal teal */
+}
+:root[data-role="ADMIN"] {
+  --role: #3b3f9e;             /* signal indigo */
+}
+
+:root {
+  --radius: 0.375rem;
+
+  /* Surfaces */
+  --background: #e3e6df;       /* panel: the app background */
+  --foreground: #1d2421;       /* ink */
+  --card: #f6f7f3;             /* enamel: raised plates */
+  --card-foreground: #1d2421;
+  --popover: #fbfcf9;
+  --popover-foreground: #1d2421;
+
+  /* Role-driven accent */
+  --primary: var(--role);
+  --primary-foreground: #ffffff;
+  --ring: var(--role);
+  --role-soft: color-mix(in oklab, var(--role) 12%, #f6f7f3);
+
+  /* Quiet supporting tones */
+  --secondary: #dce0d8;
+  --secondary-foreground: #1d2421;
+  --muted: #ebede7;
+  --muted-foreground: #5b635e;  /* graphite */
+  --accent: #e9ece5;            /* hover background in menus and lists */
+  --accent-foreground: #1d2421;
+  --destructive: #c2362f;
+
+  /* Rules */
+  --border: #c9cec6;
+  --input: #b9c0b6;
+
+  /* Status lamps: one meaning each, everywhere in the app */
+  --lamp-go: #2f8f4e;          /* online, active, available */
+  --lamp-caution: #c8871a;     /* soon, warnings */
+  --lamp-stop: #c2362f;        /* offline, inactive */
+  --lamp-off: #a3aaa1;         /* unlit / not applicable */
+
+  /* Charts (used from Phase F2 onwards) */
+  --chart-1: #1f5fad;
+  --chart-2: #0e7c78;
+  --chart-3: #3b3f9e;
+  --chart-4: #c8871a;
+  --chart-5: #c2362f;
+
+  /* Sidebar ("the track") */
+  --sidebar: #d9ddd4;
+  --sidebar-foreground: #1d2421;
+  --sidebar-primary: var(--role);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--role-soft);
+  --sidebar-accent-foreground: #1d2421;
+  --sidebar-border: #c3c9bf;
+  --sidebar-ring: var(--role);
+}
+
+/* Expose the variables as Tailwind classes: bg-card, text-muted-foreground,
+   bg-lamp-go, bg-role, bg-role-soft, rounded-lg, font-sans ... */
+@theme inline {
+  --font-sans: "Overpass", "Segoe UI", system-ui, sans-serif;
+  --font-heading: "Overpass", "Segoe UI", system-ui, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-role: var(--role);
+  --color-role-soft: var(--role-soft);
+  --color-employee: #1f5fad;
+  --color-technician: #0e7c78;
+  --color-admin: #3b3f9e;
+
+  --color-lamp-go: var(--lamp-go);
+  --color-lamp-caution: var(--lamp-caution);
+  --color-lamp-stop: var(--lamp-stop);
+  --color-lamp-off: var(--lamp-off);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Radius hierarchy: controls are tighter than the panels that hold them */
+  --radius-sm: calc(var(--radius) - 2px);   /* 4px  badges */
+  --radius-md: var(--radius);               /* 6px  small buttons */
+  --radius-lg: calc(var(--radius) + 1px);   /* 7px  inputs, buttons */
+  --radius-xl: calc(var(--radius) + 4px);   /* 10px cards, dialogs */
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    /* Tabular figures: digits share one width, so counts and dates line up */
+    font-feature-settings: "tnum" 1;
+  }
+  h1, h2, h3 {
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--role) 22%, transparent);
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* Respect "reduce motion" in the operating system's accessibility settings */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+
+/* Outline buttons usually sit on cards: give them the card surface instead of
+   the page grey (hover and open states keep shadcn's own colours). */
+[data-slot="button"][data-variant="outline"]:not(:hover):not([aria-expanded="true"]) {
+  background-color: var(--card);
+}
