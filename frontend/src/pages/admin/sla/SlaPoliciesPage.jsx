@@ -1,94 +1,77 @@
-// TEMPORARY (Phase F2 Step 2): shows the new shared components and two live
-// SLA lookups. Replaced by the real SLA policies page in Step 6.
+// SLA policies: the default targets per priority, service overrides, and a
+// preview of which one an incident would get.
 import { useState } from 'react'
+import { toast } from 'sonner'
+import { servicesApi } from '@/api/catalogApi'
 import { slaApi } from '@/api/slaApi'
-import { CategoryCode } from '@/components/CategoryCode'
-import { CriticalityBadge } from '@/components/CriticalityBadge'
-import { DurationInput } from '@/components/DurationInput'
 import { ErrorAlert } from '@/components/ErrorAlert'
-import { KeywordInput } from '@/components/KeywordInput'
+import { LoadingState } from '@/components/LoadingState'
 import { PageHeader } from '@/components/PageHeader'
-import { PriorityBadge } from '@/components/PriorityBadge'
-import { Label } from '@/components/ui/label'
 import { useAsync } from '@/hooks/useAsync'
-import { formatMinutes } from '@/lib/format'
-
-function Section({ title, children }) {
-  return (
-    <section className="space-y-4 rounded-xl bg-card p-6 ring-1 ring-foreground/10">
-      <h2 className="text-lg font-bold">{title}</h2>
-      {children}
-    </section>
-  )
-}
+import { DefaultPoliciesCard } from './DefaultPoliciesCard'
+import { EffectiveSlaCard } from './EffectiveSlaCard'
+import { SlaPolicyDialog } from './SlaPolicyDialog'
 
 export default function SlaPoliciesPage() {
-  const [keywords, setKeywords] = useState(['printer', 'toner'])
-  const [minutes, setMinutes] = useState(1680)
-  const lookup = useAsync(
-    () =>
-      Promise.all([
-        slaApi.effective({ priority: 'P1', serviceId: 1 }),
-        slaApi.effective({ priority: 'P1' }),
-      ]),
-    [],
-  )
+  const policies = useAsync(() => slaApi.list(), [])
+  const services = useAsync(() => servicesApi.list(), [])
+  const [dialog, setDialog] = useState({ open: false, policy: null, draft: undefined })
+  const [refreshKey, setRefreshKey] = useState(0) // tells the preview to look again
+
+  function handleSaved(saved, { created }) {
+    if (created) policies.setData((list) => [...(list ?? []), saved])
+    else policies.setData((list) => (list ?? []).map((p) => (p.id === saved.id ? saved : p)))
+    setRefreshKey((k) => k + 1)
+    toast.success(created ? 'Policy saved' : 'Changes saved')
+  }
+
+  const loadError = policies.error ?? services.error
+  const ready = policies.data && services.data
 
   return (
-    <div className="space-y-6">
-      <PageHeader title="SLA policies" description="Component check for Phase F2 Step 2." />
+    <>
+      <PageHeader
+        title="SLA policies"
+        description="How quickly incidents must get a first response and be resolved, by priority. A service can have stricter targets than the default."
+      />
 
-      <Section title="Badges">
-        <div className="flex flex-wrap gap-2">
-          {['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((c) => (
-            <CriticalityBadge key={c} criticality={c} />
-          ))}
+      {loadError ? (
+        <ErrorAlert
+          error={loadError}
+          title="Couldn’t load SLA policies"
+          onRetry={() => {
+            policies.reload()
+            services.reload()
+          }}
+        />
+      ) : !ready ? (
+        <LoadingState label="Loading SLA policies" />
+      ) : (
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+          <DefaultPoliciesCard
+            policies={policies.data}
+            onEdit={(policy) => setDialog({ open: true, policy, draft: undefined })}
+            onCreate={(priority) =>
+              setDialog({ open: true, policy: null, draft: { serviceId: null, priority } })
+            }
+          />
+          <EffectiveSlaCard
+            services={services.data}
+            policies={policies.data}
+            refreshKey={refreshKey}
+          />
         </div>
-        <div className="flex flex-wrap gap-2">
-          {['P1', 'P2', 'P3', 'P4'].map((p) => (
-            <PriorityBadge key={p} priority={p} />
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {['NETWORK', 'DATABASE', 'AUTHENTICATION'].map((c) => (
-            <CategoryCode key={c} code={c} />
-          ))}
-        </div>
-      </Section>
+      )}
 
-      <Section title="Inputs">
-        <div className="grid max-w-lg gap-1.5">
-          <Label htmlFor="kw">Keywords</Label>
-          <KeywordInput id="kw" value={keywords} onChange={setKeywords} />
-        </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="dur">Resolution time</Label>
-          <DurationInput id="dur" value={minutes} onChange={setMinutes} />
-          <p className="text-sm text-muted-foreground">
-            Stored value: <span className="font-semibold text-foreground">{minutes ?? 'none'}</span>{' '}
-            minutes
-          </p>
-        </div>
-      </Section>
-
-      <Section title="Live SLA lookup (P1)">
-        {lookup.error ? (
-          <ErrorAlert error={lookup.error} onRetry={lookup.reload} />
-        ) : lookup.data ? (
-          <ul className="space-y-1">
-            <li>
-              Payment Gateway: {formatMinutes(lookup.data[0].resolutionMinutes)} (
-              {lookup.data[0].scope})
-            </li>
-            <li>
-              No specific service: {formatMinutes(lookup.data[1].resolutionMinutes)} (
-              {lookup.data[1].scope})
-            </li>
-          </ul>
-        ) : (
-          <p className="text-muted-foreground">Loading…</p>
-        )}
-      </Section>
-    </div>
+      <SlaPolicyDialog
+        open={dialog.open}
+        onOpenChange={(open) => setDialog((d) => ({ ...d, open }))}
+        policy={dialog.policy}
+        draft={dialog.draft}
+        services={services.data ?? []}
+        policies={policies.data ?? []}
+        onSaved={handleSaved}
+      />
+    </>
   )
 }

@@ -89,9 +89,7 @@ export function SkillsTab() {
   ].sort((a, b) => a.name.localeCompare(b.name))
 
   // a filter for a category that has dropped out of the list falls back to "All"
-  const category = filterOptions.some((c) => String(c.id) === categoryFilter)
-    ? categoryFilter
-    : ALL
+  const category = filterOptions.some((c) => String(c.id) === categoryFilter) ? categoryFilter : ALL
 
   const shown = skills.items.filter(
     (s) =>
@@ -167,7 +165,7 @@ export function SkillsTab() {
               <TableRow className="hover:bg-transparent">
                 <TableHead className="pl-5">Skill</TableHead>
                 <TableHead>Category</TableHead>
-                <TableHead className="hidden text-right sm:table-cell">Technicians</TableHead>
+                <TableHead className="hidden pr-8 text-right sm:table-cell">Technicians</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-12 pr-5">
                   <span className="sr-only">Actions</span>
@@ -204,7 +202,7 @@ export function SkillsTab() {
                           </span>
                         </span>
                       </TableCell>
-                      <TableCell className="hidden text-right sm:table-cell">
+                      <TableCell className="hidden pr-8 text-right sm:table-cell">
                         {technicians.data ? (
                           <HolderCount names={holders.get(skill.id)} />
                         ) : (
