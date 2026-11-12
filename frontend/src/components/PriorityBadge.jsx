@@ -7,11 +7,7 @@ export function PriorityBadge({ priority, className }) {
   if (!p) return null
   return (
     <ToneTag tone={p.tone} className={className}>
-      <span className="font-extrabold">{p.value}</span>
-      <span aria-hidden="true" className="opacity-60">
-        ·
-      </span>
-      {p.label}
+      <span className="font-extrabold">{p.value}</span> · {p.label}
     </ToneTag>
   )
 }
