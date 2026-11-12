@@ -1,7 +1,17 @@
 // Users list for admins. Filters live in the URL, so refresh keeps them and
 // the dashboard tiles can link straight to a filtered list.
 import { useEffect, useState } from 'react'
-import { Ellipsis, Eye, Pencil, Search, UserCheck, UserPlus, Users, UserX } from 'lucide-react'
+import {
+  Ellipsis,
+  Eye,
+  GraduationCap,
+  Pencil,
+  Search,
+  UserCheck,
+  UserPlus,
+  Users,
+  UserX,
+} from 'lucide-react'
 import { useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { usersApi } from '@/api/usersApi'
@@ -42,6 +52,7 @@ import {
 import { useAsync } from '@/hooks/useAsync'
 import { getErrorMessage } from '@/lib/errors'
 import { formatDate } from '@/lib/format'
+import { TechnicianSkillsDialog } from './TechnicianSkillsDialog'
 import { UserDetailsDialog } from './UserDetailsDialog'
 import { UserFormDialog } from './UserFormDialog'
 
@@ -120,6 +131,7 @@ export default function UsersPage() {
   const [deactivating, setDeactivating] = useState({ open: false, user: null })
   const [pendingId, setPendingId] = useState(null)
 
+  const [skillsFor, setSkillsFor] = useState({ open: false, user: null })
   const openForm = (user = null) => setForm({ open: true, user })
   const openDetails = (user) => setDetails({ open: true, user })
 
@@ -241,7 +253,7 @@ export default function UsersPage() {
               <TableRow className="hover:bg-transparent">
                 <TableHead className="pl-5">Name</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead className="hidden md:table-cell">Department</TableHead>
+                <TableHead className="hidden md:table-cell">Details</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="hidden lg:table-cell">Created</TableHead>
                 <TableHead className="w-12 pr-5">
@@ -281,7 +293,7 @@ export default function UsersPage() {
                         <RoleBadge role={user.role} />
                       </TableCell>
                       <TableCell className="hidden text-muted-foreground md:table-cell">
-                        {user.department || '—'}
+                        <UserDetail user={user} />
                       </TableCell>
                       <TableCell>
                         <StatusBadge status={user.active ? 'ACTIVE' : 'INACTIVE'} />
@@ -296,6 +308,7 @@ export default function UsersPage() {
                           busy={pendingId === user.id}
                           onView={() => openDetails(user)}
                           onEdit={() => openForm(user)}
+                          onManageSkills={() => setSkillsFor({ open: true, user })}
                           onActivate={() => activate(user)}
                           onDeactivate={() => setDeactivating({ open: true, user })}
                         />
@@ -362,6 +375,16 @@ export default function UsersPage() {
         }}
       />
 
+      <TechnicianSkillsDialog
+        open={skillsFor.open}
+        onOpenChange={(open) => setSkillsFor((d) => ({ ...d, open }))}
+        technician={skillsFor.user}
+        onSaved={(updated) => {
+          replaceRow(updated)
+          toast.success(`${updated.fullName}’s skills saved`)
+        }}
+      />
+
       <ConfirmDialog
         open={deactivating.open}
         onOpenChange={(open) => setDeactivating((d) => ({ ...d, open }))}
@@ -376,7 +399,25 @@ export default function UsersPage() {
   )
 }
 
-function RowActions({ user, isSelf, busy, onView, onEdit, onActivate, onDeactivate }) {
+// Department for employees, number of skills for technicians.
+function UserDetail({ user }) {
+  if (user.role === 'TECHNICIAN') {
+    const count = user.skills?.length ?? 0
+    return count ? `${count} ${count === 1 ? 'skill' : 'skills'}` : 'No skills yet'
+  }
+  return user.department || '—'
+}
+
+function RowActions({
+  user,
+  isSelf,
+  busy,
+  onView,
+  onEdit,
+  onManageSkills,
+  onActivate,
+  onDeactivate,
+}) {
   // modal={false}: lets a dialog open cleanly straight from a menu item
   return (
     <DropdownMenu modal={false}>
@@ -399,6 +440,12 @@ function RowActions({ user, isSelf, busy, onView, onEdit, onActivate, onDeactiva
           <Pencil aria-hidden="true" />
           Edit
         </DropdownMenuItem>
+        {user.role === 'TECHNICIAN' && (
+          <DropdownMenuItem onSelect={onManageSkills}>
+            <GraduationCap aria-hidden="true" />
+            Manage skills
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         {user.active ? (
           <DropdownMenuItem variant="destructive" disabled={isSelf} onSelect={onDeactivate}>

@@ -16,3 +16,6 @@ export const PRIORITIES = [
 
 export const criticalityOf = (value) => CRITICALITIES.find((c) => c.value === value)
 export const priorityOf = (value) => PRIORITIES.find((p) => p.value === value)
+
+// "P1 – Critical", for dropdowns (plain text, so no styled dot)
+export const priorityLabel = (p) => `${p.value} – ${p.label}`

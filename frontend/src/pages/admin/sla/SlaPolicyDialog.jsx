@@ -10,7 +10,7 @@ import { SelectField } from '@/components/SelectField'
 import { Button } from '@/components/ui/button'
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { PRIORITIES } from '@/config/catalog'
+import { PRIORITIES, priorityLabel } from '@/config/catalog'
 import { useFormState } from '@/hooks/useFormState'
 import { getErrorCode, getErrorMessage } from '@/lib/errors'
 import { formatMinutes } from '@/lib/format'
@@ -60,7 +60,7 @@ function SlaPolicyForm({
   )
   const priorityOptions = PRIORITIES.filter((p) => !takenPriorities.has(p.value)).map((p) => ({
     value: p.value,
-    label: `${p.value} · ${p.label}`,
+    label: priorityLabel(p),
   }))
 
   const serviceName = isEdit

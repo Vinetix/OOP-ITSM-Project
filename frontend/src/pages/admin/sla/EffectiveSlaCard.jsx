@@ -5,7 +5,7 @@ import { Lamp } from '@/components/Lamp'
 import { SelectField } from '@/components/SelectField'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { PRIORITIES } from '@/config/catalog'
+import { PRIORITIES, priorityLabel } from '@/config/catalog'
 import { slaApi } from '@/api/slaApi'
 import { useAsync } from '@/hooks/useAsync'
 import { getErrorMessage } from '@/lib/errors'
@@ -39,7 +39,7 @@ export function EffectiveSlaCard({ services, policies, refreshKey }) {
             label="Priority"
             value={priority}
             onChange={setPriority}
-            options={PRIORITIES.map((p) => ({ value: p.value, label: `${p.value} · ${p.label}` }))}
+            options={PRIORITIES.map((p) => ({ value: p.value, label: priorityLabel(p) }))}
           />
           <SelectField
             id="preview-service"
