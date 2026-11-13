@@ -1,5 +1,5 @@
 // Technician home: the availability switch, work profile and (soon) the queue.
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Inbox } from 'lucide-react'
 import { toast } from 'sonner'
 import { usersApi } from '@/api/usersApi'
@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/EmptyState'
 import { InfoList } from '@/components/InfoList'
 import { Lamp } from '@/components/Lamp'
 import { PageHeader } from '@/components/PageHeader'
+import { SkillChips } from '@/components/SkillChips'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
@@ -19,25 +20,22 @@ function plural(count, word) {
 
 function AvailabilityCard() {
   const { user, updateUser } = useAuth()
-  const [available, setAvailable] = useState(Boolean(user.available))
-  const [saving, setSaving] = useState(false)
+  // while a change is being saved the switch shows it; otherwise it follows the server
+  const [pending, setPending] = useState(null)
+  const available = pending ?? Boolean(user.available)
 
   // Flip the switch straight away, then confirm with the server; undo it if that fails.
   async function handleChange(next) {
-    setAvailable(next)
-    setSaving(true)
+    setPending(next)
     try {
-      const updated = await usersApi.setMyAvailability(next)
-      updateUser(updated)
-      setAvailable(Boolean(updated.available))
+      updateUser(await usersApi.setMyAvailability(next))
       toast.success(
         next ? 'You’re available for new incidents' : 'You won’t be assigned new incidents',
       )
     } catch (error) {
-      setAvailable(!next)
       toast.error(getErrorMessage(error))
     } finally {
-      setSaving(false)
+      setPending(null) // back to the server's value: the new one, or the old one on failure
     }
   }
 
@@ -62,7 +60,7 @@ function AvailabilityCard() {
             id="availability"
             checked={available}
             onCheckedChange={handleChange}
-            disabled={saving}
+            disabled={pending !== null}
           />
         </div>
       </CardContent>
@@ -71,8 +69,13 @@ function AvailabilityCard() {
 }
 
 export default function TechnicianHomePage() {
-  const { user } = useAuth()
+  const { user, refreshMe } = useAuth()
   const firstName = user.fullName.split(' ')[0]
+
+  // an admin may have changed skills or workload since sign-in, so fetch the latest
+  useEffect(() => {
+    refreshMe().catch(() => {}) // the signed-in copy is fine to show meanwhile
+  }, [refreshMe])
 
   return (
     <>
@@ -100,6 +103,18 @@ export default function TechnicianHomePage() {
                 },
               ]}
             />
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-lg font-bold">My skills</CardTitle>
+            <CardDescription>
+              Set by your admin. From Phase 4, incidents are matched to technicians by these.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SkillChips skills={user.skills} empty="No skills yet. Ask your admin to add yours." />
           </CardContent>
         </Card>
 

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { usersApi } from '@/api/usersApi'
 import { InfoList } from '@/components/InfoList'
 import { RoleBadge } from '@/components/RoleBadge'
+import { SkillChips } from '@/components/SkillChips'
 import { StatusBadge } from '@/components/StatusBadge'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,7 +16,7 @@ import {
 } from '@/components/ui/dialog'
 import { formatDateTime } from '@/lib/format'
 
-export function UserDetailsDialog({ open, user, onOpenChange, onEdit }) {
+export function UserDetailsDialog({ open, user, onOpenChange, onEdit, onManageSkills }) {
   const [fresh, setFresh] = useState(null)
 
   useEffect(() => {
@@ -71,6 +72,7 @@ export function UserDetailsDialog({ open, user, onOpenChange, onEdit }) {
                   label: 'Availability',
                   value: <StatusBadge status={shown.available ? 'AVAILABLE' : 'UNAVAILABLE'} />,
                 },
+                isTechnician && { label: 'Skills', value: <SkillChips skills={shown.skills} /> },
                 { label: 'Created', value: formatDateTime(shown.createdAt) },
               ].filter(Boolean)}
             />
@@ -79,6 +81,11 @@ export function UserDetailsDialog({ open, user, onOpenChange, onEdit }) {
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Close
               </Button>
+              {isTechnician && onManageSkills && (
+                <Button variant="outline" onClick={() => onManageSkills(shown)}>
+                  Manage skills
+                </Button>
+              )}
               <Button onClick={() => onEdit(shown)}>Edit</Button>
             </DialogFooter>
           </>

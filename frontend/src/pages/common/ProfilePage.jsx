@@ -9,6 +9,7 @@ import { InfoList } from '@/components/InfoList'
 import { PageHeader } from '@/components/PageHeader'
 import { PasswordInput } from '@/components/PasswordInput'
 import { RoleBadge } from '@/components/RoleBadge'
+import { SkillChips } from '@/components/SkillChips'
 import { StatusBadge } from '@/components/StatusBadge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -245,6 +246,7 @@ function AccountCard() {
               label: 'Availability',
               value: <StatusBadge status={user.available ? 'AVAILABLE' : 'UNAVAILABLE'} />,
             },
+            isTechnician && { label: 'Skills', value: <SkillChips skills={user.skills} /> },
             { label: 'Member since', value: formatDate(user.createdAt) },
           ].filter(Boolean)}
         />

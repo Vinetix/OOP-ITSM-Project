@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/EmptyState'
 import { ErrorAlert } from '@/components/ErrorAlert'
 import { Lamp } from '@/components/Lamp'
 import { PageHeader } from '@/components/PageHeader'
+import { SkillChips } from '@/components/SkillChips'
 import { SoonTag } from '@/components/SoonTag'
 import { StatusBadge } from '@/components/StatusBadge'
 import { Button } from '@/components/ui/button'
@@ -142,13 +143,16 @@ function TechniciansCard() {
                 key={tech.id}
                 className="flex flex-wrap items-center gap-x-4 gap-y-1 py-3 first:pt-0 last:pb-0"
               >
-                <div className="flex min-w-0 flex-1 items-center gap-2">
-                  <span className="truncate font-semibold">{tech.fullName}</span>
-                  {tech.senior && (
-                    <span className="rounded-sm border border-technician/30 px-1.5 py-0.5 text-xs leading-none font-semibold text-technician">
-                      Senior
-                    </span>
-                  )}
+                <div className="grid min-w-0 flex-1 gap-1.5">
+                  <span className="flex items-center gap-2">
+                    <span className="truncate font-semibold">{tech.fullName}</span>
+                    {tech.senior && (
+                      <span className="rounded-sm border border-technician/30 px-1.5 py-0.5 text-xs leading-none font-semibold text-technician">
+                        Senior
+                      </span>
+                    )}
+                  </span>
+                  <SkillChips skills={tech.skills} max={3} />
                 </div>
                 <span className="text-sm text-muted-foreground">
                   Max {tech.maxActiveIncidents} active

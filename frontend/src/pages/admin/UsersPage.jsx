@@ -373,6 +373,10 @@ export default function UsersPage() {
           setDetails((d) => ({ ...d, open: false }))
           openForm(user)
         }}
+        onManageSkills={(user) => {
+          setDetails((d) => ({ ...d, open: false }))
+          setSkillsFor({ open: true, user })
+        }}
       />
 
       <TechnicianSkillsDialog
