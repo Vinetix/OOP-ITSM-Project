@@ -1,5 +1,5 @@
-// A short incident list in a card (the newest five, or the most urgent), with a
-// link to the full list. Used on all three home pages.
+// A short incident list in a card (the newest five, the most urgent, or one
+// set of statuses), with a link to the full list. Used on the home pages.
 import { Inbox } from 'lucide-react'
 import { Link } from 'react-router'
 import { incidentsApi } from '@/api/incidentsApi'
@@ -13,6 +13,8 @@ import { IncidentTable } from './IncidentTable'
 
 export function RecentIncidents({
   title,
+  status,
+  size = 5,
   description,
   listPath,
   sort,
@@ -22,7 +24,7 @@ export function RecentIncidents({
   emptyAction,
   className,
 }) {
-  const list = useAsync(() => incidentsApi.list({ size: 5, sort }), [sort])
+  const list = useAsync(() => incidentsApi.list({ status, size, sort }), [status, size, sort])
   useAutoRefresh(() => list.reload({ silent: true }))
   const incidents = list.data?.content
 

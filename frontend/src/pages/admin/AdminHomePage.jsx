@@ -58,7 +58,8 @@ const SECTION_DESCRIPTIONS = {
   '/admin/users': 'Create accounts, edit details, activate or deactivate.',
   '/admin/catalog': 'IT services, incident categories and technician skills.',
   '/admin/sla-policies': 'Response and resolution targets per priority, with service overrides.',
-  '/admin/assignment': 'How incidents are routed to technicians.',
+  '/admin/assignment': 'Which strategy picks a technician, and whether it happens automatically.',
+  '/admin/workload': 'Each technician’s active incidents against their limit.',
   '/admin/reports': 'Volumes, SLA performance and workload.',
   '/admin/audit': 'A record of every action taken.',
 }

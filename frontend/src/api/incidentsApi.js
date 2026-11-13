@@ -22,6 +22,13 @@ export const incidentsApi = {
   addNote: (id, message) => action(id, 'notes', { message }),
 
   assign: (id, technicianId) => action(id, 'assign', { technicianId }),
+  // the active strategy's top candidate (skips the current technician)
+  autoAssign: (id) => action(id, 'auto-assign'),
+  // ranking without assigning; strategy empty = the active one
+  recommendations: (id, strategy) =>
+    axiosClient
+      .get(`/api/incidents/${id}/recommendations`, { params: strategy ? { strategy } : undefined })
+      .then(data),
   acknowledge: (id) => action(id, 'acknowledge'),
   start: (id) => action(id, 'start'),
   requestInfo: (id, message) => action(id, 'request-info', { message }),

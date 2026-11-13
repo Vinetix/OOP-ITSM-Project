@@ -16,6 +16,8 @@ import { ROLE_CONFIG, getRoleHome } from '@/config/roles'
 import { AppShell } from '@/layouts/AppShell'
 import { AuthLayout } from '@/layouts/AuthLayout'
 import AdminHomePage from '@/pages/admin/AdminHomePage'
+import AssignmentSettingsPage from '@/pages/admin/AssignmentSettingsPage'
+import WorkloadPage from '@/pages/admin/WorkloadPage'
 import CatalogPage from '@/pages/admin/catalog/CatalogPage'
 import SlaPoliciesPage from '@/pages/admin/sla/SlaPoliciesPage'
 import UsersPage from '@/pages/admin/UsersPage'
@@ -29,6 +31,7 @@ import ForbiddenPage from '@/pages/common/ForbiddenPage'
 import NotFoundPage from '@/pages/common/NotFoundPage'
 import ProfilePage from '@/pages/common/ProfilePage'
 import EmployeeHomePage from '@/pages/employee/EmployeeHomePage'
+import MyWorkloadPage from '@/pages/technician/MyWorkloadPage'
 import TechnicianHomePage from '@/pages/technician/TechnicianHomePage'
 
 // Pages built so far. Any other nav item gets the Coming Soon page.
@@ -39,6 +42,9 @@ const PAGES = {
   '/technician/profile': <ProfilePage />,
   '/admin': <AdminHomePage />,
   '/admin/users': <UsersPage />,
+  '/admin/assignment': <AssignmentSettingsPage />,
+  '/admin/workload': <WorkloadPage />,
+  '/technician/workload': <MyWorkloadPage />,
   '/admin/incidents': <IncidentListPage />,
   '/employee/incidents': <IncidentListPage />,
   '/employee/incidents/new': <ReportIncidentPage />,

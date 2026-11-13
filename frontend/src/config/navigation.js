@@ -33,7 +33,7 @@ export const NAVIGATION = {
   TECHNICIAN: [
     { label: 'Home', path: '/technician', icon: House },
     { label: 'My queue', path: '/technician/incidents', icon: Inbox },
-    { label: 'Workload', path: '/technician/workload', icon: Gauge, soon: true },
+    { label: 'My workload', path: '/technician/workload', icon: Gauge },
     { label: 'Notifications', path: '/technician/notifications', icon: Bell, soon: true },
     { label: 'Profile', path: '/technician/profile', icon: UserRound },
   ],
@@ -43,7 +43,8 @@ export const NAVIGATION = {
     { label: 'Users', path: '/admin/users', icon: Users },
     { label: 'Services & categories', path: '/admin/catalog', icon: Layers },
     { label: 'SLA policies', path: '/admin/sla-policies', icon: Timer },
-    { label: 'Assignment settings', path: '/admin/assignment', icon: Route, soon: true },
+    { label: 'Assignment', path: '/admin/assignment', icon: Route },
+    { label: 'Workload', path: '/admin/workload', icon: Gauge },
     { label: 'Reports', path: '/admin/reports', icon: ChartColumn, soon: true },
     { label: 'Audit log', path: '/admin/audit', icon: ScrollText, soon: true },
     { label: 'Profile', path: '/admin/profile', icon: UserRound },
