@@ -22,6 +22,8 @@ import UsersPage from '@/pages/admin/UsersPage'
 import LoginPage from '@/pages/auth/LoginPage'
 import RegisterPage from '@/pages/auth/RegisterPage'
 import ComingSoonPage from '@/pages/common/ComingSoonPage'
+import IncidentDetailPage from '@/pages/incidents/IncidentDetailPage'
+import IncidentListPage from '@/pages/incidents/IncidentListPage'
 import ForbiddenPage from '@/pages/common/ForbiddenPage'
 import NotFoundPage from '@/pages/common/NotFoundPage'
 import ProfilePage from '@/pages/common/ProfilePage'
@@ -36,6 +38,9 @@ const PAGES = {
   '/technician/profile': <ProfilePage />,
   '/admin': <AdminHomePage />,
   '/admin/users': <UsersPage />,
+  '/admin/incidents': <IncidentListPage />,
+  '/employee/incidents': <IncidentListPage />,
+  '/technician/incidents': <IncidentListPage />,
   '/admin/catalog': <CatalogPage />,
   '/admin/sla-policies': <SlaPoliciesPage />,
   '/admin/profile': <ProfilePage />,
@@ -49,15 +54,17 @@ function roleSection(role) {
     children: [
       {
         element: <AppShell />,
-        children: NAVIGATION[role].map((item) => {
-          const element =
-            !item.soon && PAGES[item.path] ? (
-              PAGES[item.path]
-            ) : (
-              <ComingSoonPage feature={item.label} />
-            )
-          return item.path === home ? { index: true, element } : { path: item.path, element }
-        }),
+        children: NAVIGATION[role]
+          .map((item) => {
+            const element =
+              !item.soon && PAGES[item.path] ? (
+                PAGES[item.path]
+              ) : (
+                <ComingSoonPage feature={item.label} />
+              )
+            return item.path === home ? { index: true, element } : { path: item.path, element }
+          })
+          .concat({ path: `${home}/incidents/:id`, element: <IncidentDetailPage /> }),
       },
     ],
   }

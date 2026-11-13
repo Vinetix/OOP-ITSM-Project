@@ -20,21 +20,26 @@ import {
 export const NAVIGATION = {
   EMPLOYEE: [
     { label: 'Home', path: '/employee', icon: House },
-    { label: 'Report incident', path: '/employee/report', icon: FilePlus, soon: true },
-    { label: 'My incidents', path: '/employee/incidents', icon: ListTodo, soon: true },
+    { label: 'Report incident', path: '/employee/incidents/new', icon: FilePlus, soon: true },
+    {
+      label: 'My incidents',
+      path: '/employee/incidents',
+      icon: ListTodo,
+      except: ['/employee/incidents/new'], // that page has its own item
+    },
     { label: 'Notifications', path: '/employee/notifications', icon: Bell, soon: true },
     { label: 'Profile', path: '/employee/profile', icon: UserRound },
   ],
   TECHNICIAN: [
     { label: 'Home', path: '/technician', icon: House },
-    { label: 'My queue', path: '/technician/queue', icon: Inbox, soon: true },
+    { label: 'My queue', path: '/technician/incidents', icon: Inbox },
     { label: 'Workload', path: '/technician/workload', icon: Gauge, soon: true },
     { label: 'Notifications', path: '/technician/notifications', icon: Bell, soon: true },
     { label: 'Profile', path: '/technician/profile', icon: UserRound },
   ],
   ADMIN: [
     { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-    { label: 'All incidents', path: '/admin/incidents', icon: ListTodo, soon: true },
+    { label: 'All incidents', path: '/admin/incidents', icon: ListTodo },
     { label: 'Users', path: '/admin/users', icon: Users },
     { label: 'Services & categories', path: '/admin/catalog', icon: Layers },
     { label: 'SLA policies', path: '/admin/sla-policies', icon: Timer },

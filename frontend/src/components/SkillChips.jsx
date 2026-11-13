@@ -14,7 +14,7 @@ export function SkillChips({ skills = [], max, empty = 'No skills yet', classNam
       {visible.map((skill) => (
         <span
           key={skill.id}
-          title={skill.category?.name}
+          title={skill.categoryCode ?? skill.category?.name}
           className="rounded-sm border border-technician/25 bg-technician/5 px-1.5 py-0.5 text-xs leading-tight font-medium text-foreground"
         >
           {skill.name}
