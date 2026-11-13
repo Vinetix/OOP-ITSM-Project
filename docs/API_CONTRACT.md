@@ -1,6 +1,6 @@
 # I-ITSM API Contract
 
-Living document, updated every backend phase. Last update: **Phase 3 (incident core: lifecycle, priority, SLA, notes)**.
+Living document, updated every backend phase. Last update: **Phase 4 (assignment strategies, auto-assign, recommendations, workload)**.
 Live, always-current docs: `http://localhost:8080/swagger-ui.html` (raw spec: `/v3/api-docs`).
 
 ## Conventions (apply to every endpoint)
@@ -72,6 +72,7 @@ Fields that don't apply are **omitted** from responses (e.g. `department` only a
 | 422 | `INCIDENT_NOT_EDITABLE` | Details/notes can't be changed in the current status |
 | 422 | `TECHNICIAN_UNAVAILABLE` | Technician inactive or marked unavailable |
 | 422 | `TECHNICIAN_WORKLOAD_EXCEEDED` | Technician already at their max active incidents |
+| 422 | `NO_ELIGIBLE_TECHNICIAN` | Auto-assign found nobody who fits the active strategy; `message` says why. Offer manual assignment |
 | 503 | `DATABASE_UNAVAILABLE` | Show "service temporarily unavailable" |
 | 500 | `INTERNAL_ERROR` | Generic error toast |
 
@@ -400,6 +401,9 @@ NEW ─(system)→ CLASSIFIED ─assign→ ASSIGNED ─acknowledge→ ACKNOWLEDG
 
 - On report, the system immediately classifies the incident (category, priority, SLA), so a new incident is
   returned already in `CLASSIFIED`. `NEW` is only transient.
+- **Since Phase 4**, if auto-assign on report is on (the default) and a technician fits the active strategy, the
+  incident is also assigned immediately and is returned in `ASSIGNED`. **Never assume the status after report: read
+  it from the response.**
 - Details (title, description, service, category, impact, urgency, affected users) can be edited in every status
   **before** `RESOLVED`. Notes can be added in every status except `CLOSED`.
 - An action that isn't allowed in the current status gives `422 INVALID_STATE_TRANSITION`.
@@ -464,12 +468,14 @@ The calculation is explained in `priorityReason`.
 
 | Method | Path | Roles | Body | Success |
 |---|---|---|---|---|
-| POST | `/api/incidents` | Any | CreateIncidentRequest | `201` IncidentResponse (status `CLASSIFIED`) |
+| POST | `/api/incidents` | Any | CreateIncidentRequest | `201` IncidentResponse (status `ASSIGNED` if auto-assigned, otherwise `CLASSIFIED`) |
 | GET | `/api/incidents` *(paged)* | Any | `?status=IN_PROGRESS` or several: `?status=ACKNOWLEDGED,IN_PROGRESS` (optional) | `200` Page of IncidentSummaryResponse |
 | GET | `/api/incidents/{id}` | Reporter, assigned technician, ADMIN | – | `200` IncidentResponse |
 | PATCH | `/api/incidents/{id}` | Reporter, ADMIN | UpdateIncidentRequest | `200` IncidentResponse |
 | POST | `/api/incidents/{id}/notes` | Reporter, assigned technician, ADMIN | `{ "message": "..." }` | `200` IncidentResponse |
 | POST | `/api/incidents/{id}/assign` | ADMIN | `{ "technicianId": 3 }` | `200` IncidentResponse |
+| POST | `/api/incidents/{id}/auto-assign` | ADMIN | – | `200` IncidentResponse (see Assignment section) |
+| GET | `/api/incidents/{id}/recommendations` | ADMIN | `?strategy=SKILL_BASED` (optional) | `200` RecommendationResponse |
 | POST | `/api/incidents/{id}/acknowledge` | Assigned TECHNICIAN | – | `200` |
 | POST | `/api/incidents/{id}/start` | Assigned TECHNICIAN | – | `200` |
 | POST | `/api/incidents/{id}/request-info` | Assigned TECHNICIAN | `{ "message": "question" }` | `200` |
@@ -530,6 +536,7 @@ Rules:
 - They must be below their max active incidents (ASSIGNED / ACKNOWLEDGED / IN_PROGRESS / AWAITING_INFO count),
   else `422 TECHNICIAN_WORKLOAD_EXCEEDED`.
 - Assigning to the same technician again gives `422 BUSINESS_RULE_VIOLATION`.
+- The same rules apply to automatic assignment (on report and `auto-assign`).
 
 **IncidentSummaryResponse** (list row)
 
@@ -616,6 +623,124 @@ Rules:
 - `notes`: oldest first.
 - SLA keeps running while `AWAITING_INFO` (known limitation).
 
+### Assignment strategies, recommendations and workload (Phase 4)
+
+**How assignment works.** A technician can take an incident only if they are active, available, below their
+`maxActiveIncidents`, not already assigned to it and not its reporter. Among those, the **active strategy** ranks
+candidates (best first, with a 0–100 score and reasons):
+
+| Strategy | Who is considered | Ranking |
+|---|---|---|
+| `SKILL_BASED` | Only technicians with an active skill in the incident's category | Most free capacity (share of their limit unused), then more experience |
+| `LEAST_LOADED` | Everyone eligible (skills ignored) | Most free capacity, then more experience |
+| `SMART` (default) | Everyone eligible | Weighted score: skill in category 40, free capacity up to 25, earlier incidents resolved on the same service 5 each up to 15, experience 1/year up to 10, senior technician on a P1/P2 +10 |
+
+- **On report:** when `autoAssignOnReport` is true, the top candidate is assigned by the **system** (no human
+  actor). If nobody fits, the incident simply stays `CLASSIFIED` (no error).
+- **Auto-assign button (admin):** `POST /api/incidents/{id}/auto-assign` assigns the top candidate. It excludes the
+  current technician, so on an `ASSIGNED` incident it re-assigns to the next best. If nobody fits:
+  `422 NO_ELIGIBLE_TECHNICIAN`.
+- **Recommendations (admin):** `GET /api/incidents/{id}/recommendations` shows the full ranking **without assigning**.
+  Pass `?strategy=` to preview another strategy than the active one.
+- Auto-assign and recommendations are possible only when `ASSIGN` is allowed in the current status
+  (`CLASSIFIED`, `ASSIGNED`, `ACKNOWLEDGED`, `IN_PROGRESS`, `AWAITING_INFO`); otherwise `422 INVALID_STATE_TRANSITION`.
+  **UI rule:** show "Assign", "Auto-assign" and "Recommend" only when `allowedActions` contains `ASSIGN`.
+
+| Method | Path | Roles | Body / params | Success |
+|---|---|---|---|---|
+| GET | `/api/assignment/settings` | ADMIN | – | `200` AssignmentSettingsResponse |
+| PUT | `/api/assignment/settings` | ADMIN | UpdateAssignmentSettingsRequest | `200` AssignmentSettingsResponse |
+| POST | `/api/incidents/{id}/auto-assign` | ADMIN | – | `200` IncidentResponse |
+| GET | `/api/incidents/{id}/recommendations` | ADMIN | `?strategy=SMART` (optional, case-insensitive) | `200` RecommendationResponse |
+| GET | `/api/workload` | ADMIN | – | `200` WorkloadResponse[] (all technicians, by name) |
+| GET | `/api/workload/me` | TECHNICIAN | – | `200` WorkloadResponse |
+
+**AssignmentSettingsResponse**
+
+```json
+{
+  "activeStrategy": "SMART",
+  "autoAssignOnReport": true,
+  "updatedAt": "2026-11-13T10:00:00Z",
+  "strategies": [
+    { "name": "SKILL_BASED", "description": "Only technicians with an active skill in the incident's category; ...", "active": false },
+    { "name": "LEAST_LOADED", "description": "Ignores skills; the technician with the most free capacity ...", "active": false },
+    { "name": "SMART", "description": "Weighted score out of 100: skill match 40, ...", "active": true }
+  ]
+}
+```
+
+**UpdateAssignmentSettingsRequest** (both optional, null = unchanged; at least one required)
+
+```json
+{ "strategy": "SKILL_BASED", "autoAssignOnReport": true }
+```
+
+Errors: unknown strategy gives `400 INVALID_REQUEST` ("Unknown assignment strategy 'X'. Available: ..."); an empty
+body `{}` gives `400 INVALID_REQUEST`.
+
+**RecommendationResponse** (`message` appears only when `candidates` is empty)
+
+```json
+{
+  "incidentId": 8,
+  "incidentNumber": "INC00008",
+  "priority": "P1",
+  "categoryCode": "DATABASE",
+  "serviceName": "Customer Database",
+  "strategy": "SMART",
+  "activeStrategy": true,
+  "candidates": [
+    {
+      "technicianId": 3,
+      "fullName": "Fatima Khan",
+      "score": 81,
+      "reasons": [
+        "Skill in DATABASE (+40)",
+        "1 of 6 slots in use (83% free) (+21)",
+        "No earlier incidents on Customer Database (+0)",
+        "11 years' experience (+10)",
+        "Senior technician for a P1 incident (+10)"
+      ]
+    }
+  ],
+  "unavailable": [
+    { "technicianId": 4, "fullName": "Sneha Reddy", "reason": "marked unavailable" }
+  ]
+}
+```
+
+`unavailable` reasons: `already assigned to this incident`, `reported this incident`, `account deactivated`,
+`marked unavailable`, `at workload limit (6/6)`. When `candidates` is empty, show `message`, e.g. "none of the 4
+available technicians has an active skill in CLOUD".
+
+**WorkloadResponse**
+
+```json
+{
+  "technicianId": 3,
+  "fullName": "Fatima Khan",
+  "active": true,
+  "available": true,
+  "senior": true,
+  "activeIncidents": 1,
+  "maxActiveIncidents": 6,
+  "loadPercent": 17,
+  "acceptingWork": true,
+  "byStatus": { "ASSIGNED": 0, "ACKNOWLEDGED": 0, "IN_PROGRESS": 1, "AWAITING_INFO": 0 }
+}
+```
+
+- `activeIncidents` counts `ASSIGNED`, `ACKNOWLEDGED`, `IN_PROGRESS` and `AWAITING_INFO`.
+- `acceptingWork` = active, available and below the limit.
+- `byStatus` always contains these four keys.
+- To list a technician's own active incidents, use
+  `GET /api/incidents?status=ASSIGNED,ACKNOWLEDGED,IN_PROGRESS,AWAITING_INFO`.
+
+**Audit text.** Every assignment publishes a status change whose details say how it happened, for example
+"Assigned to Ravi Kumar" (manual) or "Assigned to Fatima Khan by SMART strategy (score 81/100)" (automatic). An
+automatic assignment on report has no actor (system).
+
 ## Demo data
 
 Seeded on first start when the tables are empty.
@@ -634,6 +759,9 @@ Seeded on first start when the tables are empty.
   - Employee Laptops & Desktops (LOW → HARDWARE)
 - Default SLAs (response / resolution): P1 5 min / 30 min, P2 15 min / 2 h, P3 1 h / 8 h, P4 4 h / 24 h.
 - Payment Gateway overrides: P1 5 min / 20 min, P2 10 min / 60 min.
+
+**Assignment settings:** `SMART`, auto-assign on report **on** (created on first start). The seeder switches
+auto-assign off while it runs and restores it, so the 8 incidents below always end in the same states.
 
 **Demo incidents (8)**, all created through the real lifecycle:
 
@@ -664,6 +792,11 @@ Seeded on first start when the tables are empty.
 | EMPLOYEE | `rahul.verma@itsm.com` (Finance), `divya.nair@itsm.com` (HR), `kiran.patel@itsm.com` (Sales) |
 
 ## Changelog
+
+- **Phase 4:** assignment strategies (`SKILL_BASED`, `LEAST_LOADED`, `SMART`), admin settings
+  (`/api/assignment/settings`), auto-assign on report (report may now return `ASSIGNED`),
+  `POST /api/incidents/{id}/auto-assign`, `GET /api/incidents/{id}/recommendations`, workload endpoints
+  (`/api/workload`, `/api/workload/me`), error code `NO_ELIGIBLE_TECHNICIAN`.
 
 - **Phase 3.1:** `GET /api/incidents` accepts multiple statuses; supported sort fields documented.
 - **Phase 3:** incidents (report, list, detail, edit, notes, 9 lifecycle actions), `allowedActions`, SLA tracking,
