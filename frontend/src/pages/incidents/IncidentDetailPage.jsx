@@ -1,6 +1,9 @@
 // One incident, for whoever may see it: reporter, assigned technician or admin.
-// Phase F3 Step 1: read-only. Step 2 adds the action bar, dialogs, edit and notes box.
-import { ArrowLeft, FileSearch } from 'lucide-react'
+// The buttons come from the server's allowedActions; every action returns the
+// updated incident, which simply replaces what's on screen.
+import { useState } from 'react'
+import { ArrowLeft, FileSearch, Pencil } from 'lucide-react'
+import { toast } from 'sonner'
 import { Link, Navigate, useParams } from 'react-router'
 import { incidentsApi } from '@/api/incidentsApi'
 import { useAuth } from '@/auth/AuthContext'
@@ -18,9 +21,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getRoleHome } from '@/config/roles'
 import { useAsync } from '@/hooks/useAsync'
 import { usePageTitle } from '@/hooks/usePageTitle'
-import { getErrorStatus } from '@/lib/errors'
+import { getErrorCode, getErrorMessage, getErrorStatus } from '@/lib/errors'
 import { formatDateTime } from '@/lib/format'
+import { ActionBar } from './detail/ActionBar'
+import { ActionDialog } from './detail/ActionDialog'
+import { ACTIONS } from './detail/actions'
+import { AssignDialog } from './detail/AssignDialog'
+import { EditIncidentDialog } from './detail/EditIncidentDialog'
+import { IncidentBanners } from './detail/IncidentBanners'
 import { DetailsCard, PriorityCard, SlaCard } from './detail/IncidentSideCards'
+import { NoteBox } from './detail/NoteBox'
+
+// errors that mean "this incident has changed under you": say so and reload it
+const RELOAD_CODES = new Set([
+  'INVALID_STATE_TRANSITION',
+  'INCIDENT_NOT_EDITABLE',
+  'CONCURRENT_MODIFICATION',
+  'UNAUTHORIZED_OPERATION',
+])
 
 function TextCard({ title, children }) {
   return (
@@ -37,7 +55,9 @@ export default function IncidentDetailPage() {
   const { id } = useParams()
   const { user } = useAuth()
   const listPath = `${getRoleHome(user.role)}/incidents`
-  const { data: incident, error, reload } = useAsync(() => incidentsApi.get(id), [id])
+  const { data: incident, error, reload, setData } = useAsync(() => incidentsApi.get(id), [id])
+  // which dialog is open; the name stays while it fades out
+  const [dialog, setDialog] = useState({ open: false, name: null })
   usePageTitle(incident ? `${incident.number} ${incident.title}` : 'Incident')
 
   const back = (
@@ -83,6 +103,23 @@ export default function IncidentDetailPage() {
   if (!incident) return <LoadingState label="Loading incident" />
 
   const i = incident
+  const openAction = (name) => setDialog({ open: true, name })
+  const closeDialog = (open) => setDialog((d) => ({ ...d, open }))
+
+  function applyUpdate(updated, message) {
+    setData(updated)
+    toast.success(message)
+  }
+
+  // returns true when handled here (toast and reload), false to let the dialog show it
+  function handleActionError(err) {
+    if (!RELOAD_CODES.has(getErrorCode(err))) return false
+    toast.error(getErrorMessage(err))
+    reload()
+    return true
+  }
+
+  const custom = dialog.name === 'EDIT' || ACTIONS[dialog.name]?.custom
   return (
     <>
       {back}
@@ -100,9 +137,12 @@ export default function IncidentDetailPage() {
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="grid min-w-0 gap-6">
+          <IncidentBanners incident={i} user={user} onAction={openAction} />
+
           <Card>
-            <CardContent>
+            <CardContent className="grid gap-6">
               <LifecycleStepper status={i.status} />
+              <ActionBar incident={i} onAction={openAction} />
             </CardContent>
           </Card>
 
@@ -143,15 +183,56 @@ export default function IncidentDetailPage() {
 
           <TextCard title="Activity">
             <NotesTimeline notes={i.notes} />
+            {i.canAddNote && (
+              <NoteBox
+                incident={i}
+                role={user.role}
+                onDone={applyUpdate}
+                onError={handleActionError}
+              />
+            )}
           </TextCard>
         </div>
 
         <div className="grid gap-6">
           <SlaCard sla={i.sla} />
           <PriorityCard incident={i} />
-          <DetailsCard incident={i} />
+          <DetailsCard
+            incident={i}
+            action={
+              i.canEdit && (
+                <Button variant="outline" size="sm" onClick={() => openAction('EDIT')}>
+                  <Pencil aria-hidden="true" />
+                  Edit details
+                </Button>
+              )
+            }
+          />
         </div>
       </div>
+
+      <ActionDialog
+        action={custom ? null : dialog.name}
+        open={dialog.open && !custom}
+        onOpenChange={closeDialog}
+        incident={i}
+        onDone={applyUpdate}
+        onError={handleActionError}
+      />
+      <AssignDialog
+        open={dialog.open && dialog.name === 'ASSIGN'}
+        onOpenChange={closeDialog}
+        incident={i}
+        onDone={applyUpdate}
+        onError={handleActionError}
+      />
+      <EditIncidentDialog
+        open={dialog.open && dialog.name === 'EDIT'}
+        onOpenChange={closeDialog}
+        incident={i}
+        onDone={applyUpdate}
+        onError={handleActionError}
+      />
     </>
   )
 }

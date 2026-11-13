@@ -24,6 +24,7 @@ import RegisterPage from '@/pages/auth/RegisterPage'
 import ComingSoonPage from '@/pages/common/ComingSoonPage'
 import IncidentDetailPage from '@/pages/incidents/IncidentDetailPage'
 import IncidentListPage from '@/pages/incidents/IncidentListPage'
+import ReportIncidentPage from '@/pages/incidents/ReportIncidentPage'
 import ForbiddenPage from '@/pages/common/ForbiddenPage'
 import NotFoundPage from '@/pages/common/NotFoundPage'
 import ProfilePage from '@/pages/common/ProfilePage'
@@ -40,6 +41,7 @@ const PAGES = {
   '/admin/users': <UsersPage />,
   '/admin/incidents': <IncidentListPage />,
   '/employee/incidents': <IncidentListPage />,
+  '/employee/incidents/new': <ReportIncidentPage />,
   '/technician/incidents': <IncidentListPage />,
   '/admin/catalog': <CatalogPage />,
   '/admin/sla-policies': <SlaPoliciesPage />,

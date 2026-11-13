@@ -37,7 +37,7 @@ const COLUMNS = {
   },
   title: {
     head: 'Title',
-    className: 'whitespace-normal',
+    className: 'min-w-48 whitespace-normal',
     cell: (i, _, tag) => (
       <span className="grid gap-1">
         <span className="line-clamp-2 max-w-sm font-semibold">{i.title}</span>
@@ -54,12 +54,12 @@ const COLUMNS = {
   status: { head: 'Status', cell: (i) => <IncidentStatusBadge status={i.status} /> },
   service: {
     head: 'Service',
-    className: 'hidden lg:table-cell',
+    className: 'hidden xl:table-cell',
     cell: (i) => <span className="text-muted-foreground">{i.service?.name}</span>,
   },
   category: {
     head: 'Category',
-    className: 'hidden xl:table-cell',
+    className: 'hidden 2xl:table-cell',
     cell: (i) => (i.category ? <CategoryCode code={i.category.code} /> : '—'),
   },
   reporter: {

@@ -20,7 +20,7 @@ import {
 export const NAVIGATION = {
   EMPLOYEE: [
     { label: 'Home', path: '/employee', icon: House },
-    { label: 'Report incident', path: '/employee/incidents/new', icon: FilePlus, soon: true },
+    { label: 'Report incident', path: '/employee/incidents/new', icon: FilePlus },
     {
       label: 'My incidents',
       path: '/employee/incidents',

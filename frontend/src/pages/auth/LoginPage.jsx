@@ -20,6 +20,15 @@ const DEMO_ACCOUNTS = [
   { role: 'EMPLOYEE', email: 'rahul.verma@itsm.com', does: 'Reports IT problems' },
 ]
 
+// the rest of the seeded accounts, mainly for walking through incidents
+const MORE_ACCOUNTS = [
+  { role: 'TECHNICIAN', email: 'fatima.khan@itsm.com' },
+  { role: 'TECHNICIAN', email: 'sneha.reddy@itsm.com' },
+  { role: 'TECHNICIAN', email: 'arjun.mehta@itsm.com' },
+  { role: 'EMPLOYEE', email: 'divya.nair@itsm.com' },
+  { role: 'EMPLOYEE', email: 'kiran.patel@itsm.com' },
+]
+
 const LOGIN_RULES = { email: rules.emailShape, password: rules.passwordPresent }
 
 export default function LoginPage() {
@@ -140,6 +149,26 @@ export default function LoginPage() {
             </li>
           ))}
         </ul>
+        <details className="group rounded-xl border border-border bg-card">
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset">
+            More demo accounts
+            <span className="font-normal text-muted-foreground"> (for testing incident flows)</span>
+          </summary>
+          <ul className="flex flex-wrap gap-2 border-t border-border p-3">
+            {MORE_ACCOUNTS.map((account) => (
+              <li key={account.email}>
+                <button
+                  type="button"
+                  onClick={() => fillDemo(account)}
+                  className="inline-flex items-center gap-2 rounded-lg border border-border bg-popover px-2.5 py-1.5 text-sm outline-none hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50"
+                >
+                  <RoleBadge role={account.role} />
+                  {account.email}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </details>
       </section>
     </div>
   )
