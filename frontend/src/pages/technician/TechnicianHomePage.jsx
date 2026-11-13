@@ -5,6 +5,7 @@ import { useAuth } from '@/auth/AuthContext'
 import { IncidentCounts } from '@/components/incidents/IncidentCounts'
 import { RecentIncidents } from '@/components/incidents/RecentIncidents'
 import { InfoList } from '@/components/InfoList'
+import { MyWorkloadCard } from '@/components/assignment/AssignmentHomeCards'
 import { AvailabilityCard } from '@/components/AvailabilityCard'
 import { PageHeader } from '@/components/PageHeader'
 import { SkillChips } from '@/components/SkillChips'
@@ -50,6 +51,7 @@ export default function TechnicianHomePage() {
           rowTag={(i) => (i.status === 'ASSIGNED' ? 'Needs acknowledgement' : null)}
           empty="Nothing is assigned to you right now."
         />
+        <MyWorkloadCard />
         <AvailabilityCard />
 
         <Card>
@@ -71,7 +73,7 @@ export default function TechnicianHomePage() {
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2">
+        <Card>
           <CardHeader>
             <CardTitle className="text-lg font-bold">My skills</CardTitle>
             <CardDescription>

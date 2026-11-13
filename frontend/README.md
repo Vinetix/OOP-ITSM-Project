@@ -9,6 +9,9 @@ problems, technicians work on them, and admins manage users.
 - **Phase F3:** incidents for every role: report with a live priority estimate,
   role-specific lists, the detail page with the lifecycle stepper, actions, notes and
   live SLA countdowns, and incident counts on every home page.
+- **Phase F4:** assignment: strategy and auto-assign settings, ranked recommendations
+  with reasons in the assign dialog, auto-assign, and workload pages for admins and
+  technicians.
 
 ## Run it
 

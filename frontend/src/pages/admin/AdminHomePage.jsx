@@ -3,6 +3,7 @@
 import { ArrowRight, Users } from 'lucide-react'
 import { Link } from 'react-router'
 import { usersApi } from '@/api/usersApi'
+import { AssignmentCard, TeamWorkloadCard } from '@/components/assignment/AssignmentHomeCards'
 import { EmptyState } from '@/components/EmptyState'
 import { IncidentCounts } from '@/components/incidents/IncidentCounts'
 import { RecentIncidents } from '@/components/incidents/RecentIncidents'
@@ -252,6 +253,10 @@ export default function AdminHomePage() {
           columns={['number', 'title', 'priority', 'status', 'reporter', 'technician', 'sla']}
           empty="No incidents have been reported yet."
         />
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+          <AssignmentCard />
+          <TeamWorkloadCard />
+        </div>
         <h2 className="pt-2 text-xl font-bold">People</h2>
         <CountsPanel />
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
