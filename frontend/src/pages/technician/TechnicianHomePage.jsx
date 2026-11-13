@@ -1,10 +1,11 @@
-// Technician home: the availability switch, work profile and (soon) the queue.
+// Technician home: queue counts, the most urgent work, the availability switch,
+// work profile and skills.
 import { useEffect, useState } from 'react'
-import { Inbox } from 'lucide-react'
 import { toast } from 'sonner'
 import { usersApi } from '@/api/usersApi'
 import { useAuth } from '@/auth/AuthContext'
-import { EmptyState } from '@/components/EmptyState'
+import { IncidentCounts } from '@/components/incidents/IncidentCounts'
+import { RecentIncidents } from '@/components/incidents/RecentIncidents'
 import { InfoList } from '@/components/InfoList'
 import { Lamp } from '@/components/Lamp'
 import { PageHeader } from '@/components/PageHeader'
@@ -85,6 +86,25 @@ export default function TechnicianHomePage() {
       />
 
       <div className="grid items-start gap-6 lg:grid-cols-2">
+        <IncidentCounts
+          className="lg:col-span-2"
+          listPath="/technician/incidents"
+          tiles={[
+            { label: 'Needs acknowledgement', status: 'ASSIGNED', tone: 'blue' },
+            { label: 'In progress', status: 'ACKNOWLEDGED,IN_PROGRESS', tone: 'amber' },
+            { label: 'Waiting for reporter', status: 'AWAITING_INFO', tone: 'purple' },
+          ]}
+        />
+        <RecentIncidents
+          className="lg:col-span-2"
+          title="My queue"
+          description="Most urgent deadline first."
+          listPath="/technician/incidents"
+          sort="sla.resolutionDueAt,asc"
+          columns={['number', 'title', 'priority', 'status', 'reporter', 'sla']}
+          rowTag={(i) => (i.status === 'ASSIGNED' ? 'Needs acknowledgement' : null)}
+          empty="Nothing is assigned to you right now."
+        />
         <AvailabilityCard />
 
         <Card>
@@ -115,19 +135,6 @@ export default function TechnicianHomePage() {
           </CardHeader>
           <CardContent>
             <SkillChips skills={user.skills} empty="No skills yet. Ask your admin to add yours." />
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold">My queue</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <EmptyState
-              icon={Inbox}
-              title="Your queue is empty"
-              description="Incidents assigned to you will be listed here, most urgent first."
-            />
           </CardContent>
         </Card>
       </div>

@@ -24,6 +24,7 @@ import {
 import { SORTS, STATUSES } from '@/config/incidents'
 import { getRoleHome } from '@/config/roles'
 import { useAsync } from '@/hooks/useAsync'
+import { useAutoRefresh } from '@/hooks/useAutoRefresh'
 import { getErrorStatus } from '@/lib/errors'
 import { cn } from '@/lib/utils'
 
@@ -140,6 +141,8 @@ export default function IncidentListPage() {
     () => incidentsApi.list({ status: status || undefined, sort, page, size }),
     [status, sort, page, size],
   )
+
+  useAutoRefresh(() => list.reload({ silent: true }))
 
   // if the server ever rejects a sort, fall back to the default instead of breaking
   useEffect(() => {

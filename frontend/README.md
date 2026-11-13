@@ -6,6 +6,9 @@ problems, technicians work on them, and admins manage users.
 - **Phase F1:** sign-in, the three role interfaces, user management and profiles.
 - **Phase F2:** the catalog (IT services, incident categories, technician skills),
   SLA policies with service overrides, and technician skills.
+- **Phase F3:** incidents for every role: report with a live priority estimate,
+  role-specific lists, the detail page with the lifecycle stepper, actions, notes and
+  live SLA countdowns, and incident counts on every home page.
 
 ## Run it
 
@@ -70,6 +73,11 @@ A few decisions worth knowing:
   endpoints, so `api/catalogApi.js` builds all three from one function.
 - **Durations are minutes.** SLA times are stored in minutes; `DurationInput` lets
   people type 2 h or 1 d, and `formatMinutes` shows them back the same way.
+- **The server decides the buttons.** An incident's `allowedActions` decides which
+  actions appear; `pages/incidents/detail/actions.js` only describes each one (label,
+  dialog, API call). Every action returns the updated incident, which replaces the page.
+- **Shared pages stay fresh.** Incident pages refresh quietly when you return to the tab
+  and every 30 seconds (`useAutoRefresh`), so several people can work on one incident.
 - **Nothing in the catalog is deleted.** Items are deactivated, and edit dialogs keep
   a since-deactivated choice visible so saving never changes it silently.
 

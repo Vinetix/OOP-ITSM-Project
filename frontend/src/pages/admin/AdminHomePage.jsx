@@ -1,8 +1,11 @@
-// Admin dashboard: user counts, technician availability, and the admin sections.
+// Admin dashboard: incident counts and the latest incidents, then user counts,
+// technician availability and the admin sections.
 import { ArrowRight, Users } from 'lucide-react'
 import { Link } from 'react-router'
 import { usersApi } from '@/api/usersApi'
 import { EmptyState } from '@/components/EmptyState'
+import { IncidentCounts } from '@/components/incidents/IncidentCounts'
+import { RecentIncidents } from '@/components/incidents/RecentIncidents'
 import { ErrorAlert } from '@/components/ErrorAlert'
 import { Lamp } from '@/components/Lamp'
 import { PageHeader } from '@/components/PageHeader'
@@ -221,9 +224,9 @@ export default function AdminHomePage() {
     <>
       <PageHeader
         title="Dashboard"
-        description="Who uses I-ITSM, and which technicians can take new incidents."
+        description="Where incidents stand, who uses I-ITSM, and which technicians can take new work."
         actions={
-          <Button asChild size="lg" className="h-10">
+          <Button asChild size="lg" variant="outline" className="h-10">
             <Link to="/admin/users">
               <Users aria-hidden="true" />
               Manage users
@@ -232,6 +235,23 @@ export default function AdminHomePage() {
         }
       />
       <div className="space-y-6">
+        <IncidentCounts
+          listPath="/admin/incidents"
+          tiles={[
+            { label: 'Unassigned', status: 'CLASSIFIED', tone: 'slate' },
+            { label: 'Assigned', status: 'ASSIGNED', tone: 'blue' },
+            { label: 'In progress', status: 'ACKNOWLEDGED,IN_PROGRESS', tone: 'amber' },
+            { label: 'Awaiting info', status: 'AWAITING_INFO', tone: 'purple' },
+            { label: 'Resolved', status: 'RESOLVED', tone: 'teal' },
+          ]}
+        />
+        <RecentIncidents
+          title="Latest incidents"
+          listPath="/admin/incidents"
+          columns={['number', 'title', 'priority', 'status', 'reporter', 'technician', 'sla']}
+          empty="No incidents have been reported yet."
+        />
+        <h2 className="pt-2 text-xl font-bold">People</h2>
         <CountsPanel />
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <TechniciansCard />

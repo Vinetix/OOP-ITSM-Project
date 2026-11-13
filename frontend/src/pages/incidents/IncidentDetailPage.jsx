@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getRoleHome } from '@/config/roles'
 import { useAsync } from '@/hooks/useAsync'
+import { useAutoRefresh } from '@/hooks/useAutoRefresh'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { getErrorCode, getErrorMessage, getErrorStatus } from '@/lib/errors'
 import { formatDateTime } from '@/lib/format'
@@ -58,6 +59,8 @@ export default function IncidentDetailPage() {
   const { data: incident, error, reload, setData } = useAsync(() => incidentsApi.get(id), [id])
   // which dialog is open; the name stays while it fades out
   const [dialog, setDialog] = useState({ open: false, name: null })
+  // someone else may move the incident on; look again quietly, but not mid-dialog
+  useAutoRefresh(() => reload({ silent: true }), { enabled: !dialog.open && !error })
   usePageTitle(incident ? `${incident.number} ${incident.title}` : 'Incident')
 
   const back = (
