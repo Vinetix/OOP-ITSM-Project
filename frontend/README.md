@@ -1,8 +1,11 @@
 # I-ITSM frontend
 
 React app for I-ITSM (Intelligent IT Service Management). Employees report IT
-problems, technicians work on them, and admins manage users. Phase F1 covers
-sign-in, the three role interfaces, user management and profiles.
+problems, technicians work on them, and admins manage users.
+
+- **Phase F1:** sign-in, the three role interfaces, user management and profiles.
+- **Phase F2:** the catalog (IT services, incident categories, technician skills),
+  SLA policies with service overrides, and technician skills.
 
 ## Run it
 
@@ -39,15 +42,18 @@ All use the password `Password@123`.
 
 ```
 src/
-  api/         One Axios client plus a module per backend area (auth, users, system)
+  api/         One Axios client plus a module per backend area (auth, users, system,
+               catalog, sla)
   auth/        Session context and the three route guards
-  config/      Roles and per-role navigation: the data the shell is built from
-  components/  Shared pieces: lamps, badges, form fields, dialogs, pagination
+  config/      Roles, per-role navigation, and catalog value sets (criticality, priority)
+  components/  Shared pieces: lamps, badges, form fields, dialogs, pagination, plus the
+               F2 tags (criticality, priority), keyword and duration inputs
   components/ui/  shadcn/ui components (generated, then themed in index.css)
-  hooks/       useAsync for loading data, usePageTitle for the tab title
+  hooks/       useAsync for loading data, useFormState for forms, usePageTitle
   layouts/     App shell (top bar + track sidebar) and the sign-in layout
   lib/         Date formatting, error helpers, validation rules
   pages/       One folder per role, plus pages every role shares
+               (admin/catalog and admin/sla hold the F2 admin screens)
 ```
 
 A few decisions worth knowing:
@@ -60,6 +66,12 @@ A few decisions worth knowing:
   `lib/errors.js` reads it, and forms put field errors under the right field.
 - **Sessions.** The token lives in localStorage so a refresh keeps you signed in.
   Any 401 ends the session centrally in `api/axiosClient.js`.
+- **One factory for the catalog.** Categories, services and skills share their
+  endpoints, so `api/catalogApi.js` builds all three from one function.
+- **Durations are minutes.** SLA times are stored in minutes; `DurationInput` lets
+  people type 2 h or 1 d, and `formatMinutes` shows them back the same way.
+- **Nothing in the catalog is deleted.** Items are deactivated, and edit dialogs keep
+  a since-deactivated choice visible so saving never changes it silently.
 
 The backend API is described in `docs/API_CONTRACT.md` and at
 http://localhost:8080/swagger-ui.html.
