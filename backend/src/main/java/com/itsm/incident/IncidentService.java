@@ -44,6 +44,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.BiConsumer;
 
@@ -104,10 +105,11 @@ public class IncidentService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<IncidentSummaryResponse> list(IncidentStatus status, Pageable pageable, UserPrincipal actor) {
+    public PageResponse<IncidentSummaryResponse> list(Collection<IncidentStatus> statuses, Pageable pageable,
+                                                      UserPrincipal actor) {
         Specification<Incident> spec = IncidentSpecifications.visibleTo(actor);
-        if (status != null) {
-            spec = spec.and(IncidentSpecifications.hasStatus(status));
+        if (statuses != null && !statuses.isEmpty()) {
+            spec = spec.and(IncidentSpecifications.hasStatusIn(statuses));
         }
         Instant now = clock.instant();
         return PageResponse.from(incidentRepository.findAll(spec, pageable)

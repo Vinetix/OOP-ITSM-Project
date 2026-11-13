@@ -33,6 +33,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 /**
  * Each lifecycle step is its own endpoint (POST /api/incidents/{id}/acknowledge, ...).
  * @PreAuthorize does a coarse role check; IncidentService checks ownership (assigned technician,
@@ -57,13 +59,15 @@ public class IncidentController {
     }
 
     @GetMapping
-    @Operation(summary = "List incidents visible to me (employee: reported, technician: assigned, admin: all)")
+    @Operation(summary = "List incidents visible to me (employee: reported, technician: assigned, admin: all). "
+            + "status accepts one or more values: ?status=ACKNOWLEDGED,IN_PROGRESS. "
+            + "Sort by createdAt, updatedAt, priority, status, title, sla.responseDueAt or sla.resolutionDueAt.")
     public PageResponse<IncidentSummaryResponse> list(
             @AuthenticationPrincipal UserPrincipal me,
-            @RequestParam(name = "status", required = false) IncidentStatus status,
+            @RequestParam(name = "status", required = false) List<IncidentStatus> statuses,
             @ParameterObject @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable) {
-        return incidentService.list(status, pageable, me);
+        return incidentService.list(statuses, pageable, me);
     }
 
     @GetMapping("/{id}")
