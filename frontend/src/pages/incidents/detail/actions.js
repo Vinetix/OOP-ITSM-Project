@@ -11,16 +11,23 @@ import {
   RotateCcw,
   ThumbsUp,
   UserPlus,
+  WandSparkles,
 } from 'lucide-react'
 import { incidentsApi } from '@/api/incidentsApi'
 import { optionalText } from '@/lib/validation'
 
 export const ACTIONS = {
   ASSIGN: {
-    label: (incident) => (incident.assignedTechnician ? 'Re-assign' : 'Assign'),
+    label: (incident) => (incident.assignedTechnician ? 'Re-assign…' : 'Assign…'),
     icon: UserPlus,
     primary: true,
-    custom: 'assign', // has its own dialog with the technician list
+    custom: 'assign', // its own dialog: ranked recommendations to choose from
+  },
+  // not a server action of its own: offered alongside ASSIGN (see ActionBar)
+  AUTO_ASSIGN: {
+    label: 'Auto-assign',
+    icon: WandSparkles,
+    custom: 'auto',
   },
   ACKNOWLEDGE: {
     label: 'Acknowledge',

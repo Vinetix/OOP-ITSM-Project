@@ -88,7 +88,12 @@ function ReportForm({ services, categories }) {
         urgency: values.urgency,
         affectedUsers: Number(values.affectedUsers),
       })
-      toast.success(`${incident.number} reported, priority ${incident.priority}`)
+      // auto-assignment may already have picked someone: say what actually happened
+      toast.success(
+        incident.status === 'ASSIGNED' && incident.assignedTechnician
+          ? `${incident.number} reported (${incident.priority}), assigned to ${incident.assignedTechnician.fullName}`
+          : `${incident.number} reported (${incident.priority}), waiting for a technician`,
+      )
       navigate(`/employee/incidents/${incident.id}`)
     } catch (error) {
       // a service without a default category comes back as a business rule

@@ -28,6 +28,7 @@ import { ActionBar } from './detail/ActionBar'
 import { ActionDialog } from './detail/ActionDialog'
 import { ACTIONS } from './detail/actions'
 import { AssignDialog } from './detail/AssignDialog'
+import { AutoAssignDialog } from './detail/AutoAssignDialog'
 import { EditIncidentDialog } from './detail/EditIncidentDialog'
 import { IncidentBanners } from './detail/IncidentBanners'
 import { DetailsCard, PriorityCard, SlaCard } from './detail/IncidentSideCards'
@@ -221,6 +222,14 @@ export default function IncidentDetailPage() {
         incident={i}
         onDone={applyUpdate}
         onError={handleActionError}
+      />
+      <AutoAssignDialog
+        open={dialog.open && dialog.name === 'AUTO_ASSIGN'}
+        onOpenChange={closeDialog}
+        incident={i}
+        onDone={applyUpdate}
+        onError={handleActionError}
+        onChooseManually={() => openAction('ASSIGN')}
       />
       <AssignDialog
         open={dialog.open && dialog.name === 'ASSIGN'}

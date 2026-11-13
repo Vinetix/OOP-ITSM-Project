@@ -1,161 +1,166 @@
-// Pick a technician. Only available technicians are listed; those with a skill
-// in the incident's category are marked "Skill match" and come first.
+// Assign from a ranked list. The server ranks the technicians who can take the
+// incident (any strategy can be previewed) and says why; the admin picks one.
 import { useState } from 'react'
-import { usersApi } from '@/api/usersApi'
+import { UserSearch } from 'lucide-react'
+import { assignmentApi } from '@/api/assignmentApi'
 import { incidentsApi } from '@/api/incidentsApi'
+import { CandidateCard } from '@/components/assignment/CandidateCard'
+import { CategoryCode } from '@/components/CategoryCode'
+import { EmptyState } from '@/components/EmptyState'
 import { ErrorAlert } from '@/components/ErrorAlert'
 import { FormAlert } from '@/components/FormAlert'
 import { FormDialog } from '@/components/FormDialog'
-import { SkillChips } from '@/components/SkillChips'
+import { PriorityBadge } from '@/components/PriorityBadge'
+import { SelectField } from '@/components/SelectField'
 import { Button } from '@/components/ui/button'
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
+import { strategyLabel } from '@/config/assignment'
 import { useAsync } from '@/hooks/useAsync'
-import { getErrorMessage } from '@/lib/errors'
-import { cn } from '@/lib/utils'
+import { getErrorCode, getErrorMessage } from '@/lib/errors'
+
+// the numbers have moved under us: show why, keep the dialog open, rank again
+const RECHECK = new Set([
+  'TECHNICIAN_UNAVAILABLE',
+  'TECHNICIAN_WORKLOAD_EXCEEDED',
+  'BUSINESS_RULE_VIOLATION',
+])
 
 export function AssignDialog({ open, onOpenChange, incident, onDone, onError }) {
   return (
-    <FormDialog open={open} onOpenChange={onOpenChange} className="sm:max-w-xl">
+    <FormDialog open={open} onOpenChange={onOpenChange} className="sm:max-w-2xl">
       {(dialog) => <AssignForm incident={incident} onDone={onDone} onError={onError} {...dialog} />}
     </FormDialog>
   )
 }
 
 function AssignForm({ incident, onDone, onError, busy, setBusy, close }) {
-  const technicians = useAsync(() => usersApi.listTechnicians({ availableOnly: true }), [])
-  const [selected, setSelected] = useState(null)
-  const [formError, setFormError] = useState(null)
-  const current = incident.assignedTechnician
-  const code = incident.category?.code
-
-  const matches = (t) => (t.skills ?? []).some((s) => s.categoryCode === code)
-  const ranked = [...(technicians.data ?? [])].sort(
-    (a, b) =>
-      Number(matches(b)) - Number(matches(a)) ||
-      Number(Boolean(b.senior)) - Number(Boolean(a.senior)) ||
-      a.fullName.localeCompare(b.fullName),
+  const settings = useAsync(() => assignmentApi.getSettings().catch(() => null), [])
+  const [strategy, setStrategy] = useState('') // '' = the active one
+  const recs = useAsync(
+    () => incidentsApi.recommendations(incident.id, strategy),
+    [incident.id, strategy],
   )
-  const currentListed = current && ranked.some((t) => t.id === current.id)
+  const [error, setError] = useState(null)
 
-  async function assign() {
-    if (!selected) return setFormError('Choose a technician')
+  const active =
+    settings.data?.activeStrategy ?? (recs.data?.activeStrategy ? recs.data.strategy : null)
+  // what the dropdown shows: the choice, else the active one (known from settings or the ranking)
+  const shown = strategy || active || recs.data?.strategy || ''
+  const options = (
+    settings.data?.strategies ?? (active ? [{ name: active, active: true }] : [])
+  ).map((s) => ({
+    value: s.name,
+    label: `${strategyLabel(s.name)}${s.name === active ? ' (active)' : ''}`,
+  }))
+
+  async function assign(candidate) {
     setBusy(true)
+    setError(null)
     try {
-      const updated = await incidentsApi.assign(incident.id, selected.id)
-      onDone(updated, `Assigned to ${selected.fullName}`)
+      const updated = await incidentsApi.assign(incident.id, candidate.technicianId)
+      onDone(updated, `Assigned to ${candidate.fullName}`)
       close()
-    } catch (error) {
-      // unavailable, at their limit, or already assigned: say so here and stay open
-      if (onError(error)) close()
-      else setFormError(getErrorMessage(error))
+    } catch (err) {
+      if (RECHECK.has(getErrorCode(err))) {
+        setError(getErrorMessage(err))
+        recs.reload()
+      } else if (onError(err)) close()
+      else setError(getErrorMessage(err))
     } finally {
       setBusy(false)
     }
   }
 
+  const data = recs.data
   return (
     <div className="grid gap-5">
       <DialogHeader>
         <DialogTitle className="text-xl font-bold">
-          {current ? 'Re-assign' : 'Assign'} {incident.number}
+          {incident.assignedTechnician ? 'Re-assign' : 'Assign'} {incident.number}
         </DialogTitle>
-        <DialogDescription>
-          Available technicians only. Those with a skill in{' '}
-          {incident.category?.name ?? 'this category'} come first.
+        <DialogDescription asChild>
+          <div className="flex flex-wrap items-center gap-2">
+            <PriorityBadge priority={incident.priority} />
+            {incident.category && <CategoryCode code={incident.category.code} />}
+            <span>{incident.service?.name}</span>
+            {incident.assignedTechnician && (
+              <span>· now with {incident.assignedTechnician.fullName}</span>
+            )}
+          </div>
         </DialogDescription>
       </DialogHeader>
 
-      <FormAlert message={formError} />
-
-      {current && !currentListed && technicians.data && (
-        <p className="rounded-lg bg-muted px-3 py-2 text-sm">
-          Currently assigned to <span className="font-semibold">{current.fullName}</span>, who isn’t
-          available for new work.
-        </p>
+      {options.length > 0 && (
+        <div className="grid gap-1.5">
+          <SelectField
+            id="strategy"
+            label="Rank by"
+            value={shown}
+            onChange={(v) => setStrategy(v === active ? '' : v)}
+            options={options}
+          />
+          {data && !data.activeStrategy && active && (
+            <p className="text-sm text-[color:color-mix(in_oklab,var(--lamp-caution)_70%,black)]">
+              Preview only: auto-assign uses {strategyLabel(active)}.
+            </p>
+          )}
+        </div>
       )}
 
-      {technicians.error ? (
+      <FormAlert message={error} />
+
+      {recs.error ? (
         <ErrorAlert
-          error={technicians.error}
-          title="Couldn’t load technicians"
-          onRetry={technicians.reload}
+          error={recs.error}
+          title="Couldn’t load recommendations"
+          onRetry={recs.reload}
         />
-      ) : !technicians.data ? (
-        <div className="grid gap-2">
+      ) : !data || (recs.loading && data.strategy !== shown) ? (
+        <div className="grid gap-3" aria-busy="true">
           {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-16 w-full" />
+            <Skeleton key={i} className="h-28 w-full" />
           ))}
         </div>
-      ) : ranked.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-input p-4 text-sm text-muted-foreground">
-          No technician is available right now.
-        </p>
       ) : (
-        <div
-          role="radiogroup"
-          aria-label="Technician"
-          className="grid max-h-[50svh] gap-2 overflow-y-auto pr-1"
-        >
-          {ranked.map((t) => {
-            const isCurrent = current?.id === t.id
-            const isSelected = selected?.id === t.id
-            return (
-              <button
-                key={t.id}
-                type="button"
-                role="radio"
-                aria-checked={isSelected}
-                disabled={isCurrent}
-                onClick={() => {
-                  setSelected(t)
-                  setFormError(null)
-                }}
-                className={cn(
-                  'grid gap-2 rounded-lg border p-3 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
-                  isSelected
-                    ? 'border-role bg-role-soft'
-                    : 'border-input bg-popover hover:bg-accent',
-                  isCurrent && 'cursor-not-allowed opacity-60 hover:bg-popover',
-                )}
-              >
-                <span className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold">{t.fullName}</span>
-                  {matches(t) && (
-                    <span className="rounded-sm bg-lamp-go/15 px-1.5 py-0.5 text-xs font-semibold text-[color:color-mix(in_oklab,var(--lamp-go)_75%,black)]">
-                      Skill match
-                    </span>
-                  )}
-                  {t.senior && (
-                    <span className="rounded-sm border border-technician/30 px-1.5 py-0.5 text-xs font-semibold text-technician">
-                      Senior
-                    </span>
-                  )}
-                  {isCurrent && (
-                    <span className="text-xs text-muted-foreground">Current assignee</span>
-                  )}
-                  <span className="ml-auto text-xs text-muted-foreground">
-                    {t.experienceYears ?? 0} yrs · max {t.maxActiveIncidents} active
-                  </span>
-                </span>
-                {/* every skill, no "+N more": that's a button, and this card is one already */}
-                <SkillChips skills={t.skills} />
-              </button>
-            )
-          })}
-        </div>
+        <>
+          {data.candidates.length === 0 ? (
+            <EmptyState
+              icon={UserSearch}
+              title="Nobody fits this strategy"
+              description={data.message}
+            />
+          ) : (
+            <ol className={recs.loading ? 'grid gap-3 opacity-60' : 'grid gap-3'}>
+              {data.candidates.map((c, n) => (
+                <li key={c.technicianId}>
+                  <CandidateCard candidate={c} rank={n + 1} onAssign={assign} busy={busy} />
+                </li>
+              ))}
+            </ol>
+          )}
+
+          {data.unavailable?.length > 0 && (
+            <details className="group rounded-lg border border-border bg-popover px-4 py-3 text-sm">
+              <summary className="cursor-pointer font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                Unavailable ({data.unavailable.length})
+              </summary>
+              <ul className="mt-2 grid gap-1 text-muted-foreground">
+                {data.unavailable.map((u) => (
+                  <li key={u.technicianId} className="flex flex-wrap justify-between gap-x-3">
+                    <span className="font-medium">{u.fullName}</span>
+                    <span>{u.reason}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </>
       )}
 
       <DialogFooter>
         <Button type="button" variant="outline" disabled={busy} onClick={close}>
-          Cancel
-        </Button>
-        <Button onClick={assign} disabled={busy || !technicians.data}>
-          {busy
-            ? 'Assigning…'
-            : selected
-              ? `Assign to ${selected.fullName.split(' ')[0]}`
-              : 'Assign'}
+          Close
         </Button>
       </DialogFooter>
     </div>
