@@ -1,6 +1,7 @@
 package com.itsm.incident;
 
 import com.itsm.common.web.PageResponse;
+import com.itsm.incident.assignment.dto.RecommendationResponse;
 import com.itsm.incident.dto.AssignIncidentRequest;
 import com.itsm.incident.dto.CloseIncidentRequest;
 import com.itsm.incident.dto.CreateIncidentRequest;
@@ -52,7 +53,7 @@ public class IncidentController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Report an incident (auto-classified, prioritized and given an SLA)")
+    @Operation(summary = "Report an incident (auto-classified, prioritized, given an SLA and, if enabled, auto-assigned)")
     public IncidentResponse report(@AuthenticationPrincipal UserPrincipal me,
                                    @Valid @RequestBody CreateIncidentRequest request) {
         return incidentService.report(request, me);
@@ -98,6 +99,22 @@ public class IncidentController {
     public IncidentResponse assign(@AuthenticationPrincipal UserPrincipal me, @PathVariable("id") Long id,
                                    @Valid @RequestBody AssignIncidentRequest request) {
         return incidentService.assign(id, request.technicianId(), me);
+    }
+
+    @PostMapping("/{id}/auto-assign")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "ADMIN: let the active assignment strategy pick a technician (excludes the current one)")
+    public IncidentResponse autoAssign(@AuthenticationPrincipal UserPrincipal me, @PathVariable("id") Long id) {
+        return incidentService.autoAssign(id, me);
+    }
+
+    @GetMapping("/{id}/recommendations")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "ADMIN: ranked technicians with reasons, by the active strategy or ?strategy=SKILL_BASED / "
+            + "LEAST_LOADED / SMART. Assigns nothing.")
+    public RecommendationResponse recommendations(@AuthenticationPrincipal UserPrincipal me, @PathVariable("id") Long id,
+                                                  @RequestParam(name = "strategy", required = false) String strategy) {
+        return incidentService.recommendations(id, strategy, me);
     }
 
     @PostMapping("/{id}/acknowledge")

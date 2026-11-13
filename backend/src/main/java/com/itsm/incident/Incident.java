@@ -212,6 +212,11 @@ public class Incident extends BaseEntity {
         this.status = next;
     }
 
+    /** Throws InvalidStateTransitionException if the action isn't allowed now; changes nothing. */
+    public void ensureAllowed(IncidentAction action) {
+        state().next(action);
+    }
+
     // ---------------- details, priority, notes ----------------
 
     /**

@@ -10,7 +10,11 @@ import com.itsm.common.exception.BusinessRuleViolationException;
 import com.itsm.common.exception.ResourceNotFoundException;
 import com.itsm.common.exception.UnauthorizedOperationException;
 import com.itsm.common.web.PageResponse;
+import com.itsm.incident.assignment.AssignmentProposal;
+import com.itsm.incident.assignment.AssignmentService;
+import com.itsm.incident.assignment.NoEligibleTechnicianException;
 import com.itsm.incident.assignment.TechnicianWorkloadService;
+import com.itsm.incident.assignment.dto.RecommendationResponse;
 import com.itsm.incident.dto.CreateIncidentRequest;
 import com.itsm.incident.dto.IncidentResponse;
 import com.itsm.incident.dto.IncidentSummaryResponse;
@@ -36,6 +40,7 @@ import com.itsm.user.TechnicianRepository;
 import com.itsm.user.User;
 import com.itsm.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -54,7 +59,12 @@ import java.util.function.BiConsumer;
  *   2. call the domain method; the incident's State checks WHEN it is allowed
  *   3. publish an event (Observer) so notifications/audit can react
  *   4. return a DTO
+ *
+ * Assignment can be manual (admin picks a technician) or automatic (the active AssignmentStrategy
+ * picks one, on report or on request). Both go through applyAssignment(), so the same checks and
+ * events apply. Automatic assignment on report is done by the system (actor id null).
  */
+@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -68,6 +78,7 @@ public class IncidentService {
     private final SlaPolicyService slaPolicyService;
     private final PriorityStrategy priorityStrategy;
     private final TechnicianWorkloadService workloadService;
+    private final AssignmentService assignmentService;
     private final IncidentAccessPolicy accessPolicy;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
@@ -94,6 +105,15 @@ public class IncidentService {
                 "Classified as " + category.getCode() + ". " + priority.explanation()
                         + ". SLA (" + sla.scope() + "): respond in " + sla.responseMinutes()
                         + " min, resolve in " + sla.resolutionMinutes() + " min"));
+
+        if (assignmentService.isAutoAssignOnReport()) {
+            AssignmentProposal proposal = assignmentService.propose(incident);
+            if (proposal.hasCandidate()) {
+                applyAssignment(incident, proposal.technician(), null, now, proposal.describe());
+            } else {
+                log.info("{} stays CLASSIFIED: {}", incident.getNumber(), proposal.noCandidateReason());
+            }
+        }
         return toResponse(incident, actor, now);
     }
 
@@ -150,17 +170,29 @@ public class IncidentService {
         Incident incident = loadForAction(id, IncidentAction.ASSIGN, actor);
         Technician technician = technicianRepository.findById(technicianId)
                 .orElseThrow(() -> new ResourceNotFoundException("Technician", technicianId));
-        workloadService.ensureCanAccept(technician);
-
-        Long previousId = incident.getAssignedTechnician() == null ? null : incident.getAssignedTechnician().getId();
-        IncidentStatus from = incident.getStatus();
         Instant now = clock.instant();
-        incident.assignTo(technician, now);
-
-        publish(new IncidentAssignedEvent(id, actor.getId(), now, technician.getId(), previousId));
-        publishStatusChange(incident, from, IncidentAction.ASSIGN, actor.getId(), now,
-                (previousId == null ? "Assigned to " : "Re-assigned to ") + technician.getFullName());
+        applyAssignment(incident, technician, actor.getId(), now, "");
         return toResponse(incident, actor, now);
+    }
+
+    /** Admin asks the active strategy to pick (excludes the current assignee, so it can also re-assign). */
+    public IncidentResponse autoAssign(Long id, UserPrincipal actor) {
+        Incident incident = loadForAction(id, IncidentAction.ASSIGN, actor);
+        incident.ensureAllowed(IncidentAction.ASSIGN); // a CLOSED incident fails here, before any ranking
+        AssignmentProposal proposal = assignmentService.propose(incident);
+        if (!proposal.hasCandidate()) {
+            throw new NoEligibleTechnicianException(incident.getNumber(), proposal.noCandidateReason());
+        }
+        Instant now = clock.instant();
+        applyAssignment(incident, proposal.technician(), actor.getId(), now, proposal.describe());
+        return toResponse(incident, actor, now);
+    }
+
+    /** Ranked technicians with reasons (smart recommendation). Read-only: nothing is assigned. */
+    public RecommendationResponse recommendations(Long id, String strategy, UserPrincipal actor) {
+        Incident incident = loadForAction(id, IncidentAction.ASSIGN, actor);
+        incident.ensureAllowed(IncidentAction.ASSIGN);
+        return assignmentService.recommend(incident, strategy);
     }
 
     public IncidentResponse acknowledge(Long id, UserPrincipal actor) {
@@ -221,6 +253,18 @@ public class IncidentService {
     }
 
     // =============== helpers ===============
+
+    /** Shared by manual and automatic assignment: check workload, assign, publish. actorId null = system. */
+    private void applyAssignment(Incident incident, Technician technician, Long actorId, Instant now, String how) {
+        workloadService.ensureCanAccept(technician);
+        Long previousId = incident.getAssignedTechnician() == null ? null : incident.getAssignedTechnician().getId();
+        IncidentStatus from = incident.getStatus();
+        incident.assignTo(technician, now);
+
+        publish(new IncidentAssignedEvent(incident.getId(), actorId, now, technician.getId(), previousId));
+        publishStatusChange(incident, from, IncidentAction.ASSIGN, actorId, now,
+                (previousId == null ? "Assigned to " : "Re-assigned to ") + technician.getFullName() + how);
+    }
 
     /** Template for the simple lifecycle actions: authorize, apply, publish, respond. */
     private IncidentResponse transition(Long id, IncidentAction action, UserPrincipal actor,
