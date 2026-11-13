@@ -6,6 +6,7 @@ import com.itsm.catalog.ITService;
 import com.itsm.catalog.ITServiceRepository;
 import com.itsm.incident.IncidentRepository;
 import com.itsm.incident.IncidentService;
+import com.itsm.incident.assignment.AssignmentSettingsService;
 import com.itsm.incident.dto.CreateIncidentRequest;
 import com.itsm.incident.dto.ResolveIncidentRequest;
 import com.itsm.incident.dto.VerifyIncidentRequest;
@@ -28,6 +29,10 @@ import org.springframework.stereotype.Component;
  * clicked the buttons. So priority, SLA deadlines, state rules and published events are all
  * genuine, and the seeder doubles as an end-to-end check of the lifecycle.
  *
+ * Automatic assignment on report is switched off while seeding, because each demo incident is assigned
+ * to a specific technician by the admin below (and #4 and #8 must stay CLASSIFIED for the assignment
+ * demo). The admin's setting is restored afterwards, even if seeding fails.
+ *
  * Runs after the user (@Order 1) and catalog (@Order 2) seeders, only when there are no incidents.
  */
 @Slf4j
@@ -42,6 +47,7 @@ public class IncidentDemoDataSeeder implements CommandLineRunner {
     private final ItsmUserDetailsService users;
     private final ITServiceRepository serviceRepository;
     private final CategoryRepository categoryRepository;
+    private final AssignmentSettingsService assignmentSettings;
 
     @Override
     public void run(String... args) {
@@ -54,13 +60,17 @@ public class IncidentDemoDataSeeder implements CommandLineRunner {
             log.warn("Demo incidents: skipped, the service catalog is empty (catalog seeder didn't run?)");
             return;
         }
+        boolean autoAssign = assignmentSettings.isAutoAssignOnReport();
         try {
+            assignmentSettings.changeAutoAssignOnReport(false);
             seed();
             log.info("Seeded {} demo incidents across the lifecycle", incidentRepository.count());
         } catch (RuntimeException e) {
             // Demo data must never stop the application from starting.
             log.warn("Demo incident seeding stopped early after {} incidents: {}",
                     incidentRepository.count(), e.getMessage(), e);
+        } finally {
+            assignmentSettings.changeAutoAssignOnReport(autoAssign);
         }
     }
 
