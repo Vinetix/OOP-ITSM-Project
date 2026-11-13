@@ -465,7 +465,7 @@ The calculation is explained in `priorityReason`.
 | Method | Path | Roles | Body | Success |
 |---|---|---|---|---|
 | POST | `/api/incidents` | Any | CreateIncidentRequest | `201` IncidentResponse (status `CLASSIFIED`) |
-| GET | `/api/incidents` *(paged)* | Any | `?status=IN_PROGRESS` (optional) | `200` Page of IncidentSummaryResponse |
+| GET | `/api/incidents` *(paged)* | Any | `?status=IN_PROGRESS` or several: `?status=ACKNOWLEDGED,IN_PROGRESS` (optional) | `200` Page of IncidentSummaryResponse |
 | GET | `/api/incidents/{id}` | Reporter, assigned technician, ADMIN | – | `200` IncidentResponse |
 | PATCH | `/api/incidents/{id}` | Reporter, ADMIN | UpdateIncidentRequest | `200` IncidentResponse |
 | POST | `/api/incidents/{id}/notes` | Reporter, assigned technician, ADMIN | `{ "message": "..." }` | `200` IncidentResponse |
@@ -482,7 +482,24 @@ The calculation is explained in `priorityReason`.
 All lifecycle endpoints return the updated IncidentResponse.
 
 **List visibility:** an EMPLOYEE sees incidents they reported; a TECHNICIAN sees incidents assigned to them; an
-ADMIN sees all. The default sort is `createdAt,desc`.
+ADMIN sees all.
+
+**Status filter:** one value or several, comma-separated (or as a repeated `status=` parameter). For example,
+`?status=AWAITING_INFO,RESOLVED` returns incidents in either status.
+
+**Sorting:** the default is `createdAt,desc`. Supported sort fields:
+
+| Field | Note |
+|---|---|
+| `createdAt` | |
+| `updatedAt` | |
+| `priority` | `asc` puts P1 first |
+| `status` | |
+| `title` | |
+| `sla.responseDueAt` | |
+| `sla.resolutionDueAt` | `asc` puts the most urgent deadline first |
+
+Example: `?sort=sla.resolutionDueAt,asc`. An unknown sort field gives `400`.
 
 **CreateIncidentRequest** (`categoryId` optional: if omitted, the service's default category is used; if the service
 has none, you get `422` asking for a category)
@@ -648,6 +665,7 @@ Seeded on first start when the tables are empty.
 
 ## Changelog
 
+- **Phase 3.1:** `GET /api/incidents` accepts multiple statuses; supported sort fields documented.
 - **Phase 3:** incidents (report, list, detail, edit, notes, 9 lifecycle actions), `allowedActions`, SLA tracking,
   new 422 codes (`INVALID_STATE_TRANSITION`, `INCIDENT_NOT_EDITABLE`, `TECHNICIAN_UNAVAILABLE`,
   `TECHNICIAN_WORKLOAD_EXCEEDED`), demo incidents.
