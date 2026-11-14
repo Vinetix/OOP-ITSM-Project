@@ -46,7 +46,7 @@ export const NAVIGATION = {
     { label: 'Assignment', path: '/admin/assignment', icon: Route },
     { label: 'Workload', path: '/admin/workload', icon: Gauge },
     { label: 'Reports', path: '/admin/reports', icon: ChartColumn, soon: true },
-    { label: 'Audit log', path: '/admin/audit', icon: ScrollText, soon: true },
+    { label: 'Audit log', path: '/admin/audit', icon: ScrollText },
     { label: 'Notifications', path: '/admin/notifications', icon: Bell, badge: 'unread' },
     { label: 'Profile', path: '/admin/profile', icon: UserRound },
   ],

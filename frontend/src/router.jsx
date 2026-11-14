@@ -17,6 +17,7 @@ import { AppShell } from '@/layouts/AppShell'
 import { AuthLayout } from '@/layouts/AuthLayout'
 import AdminHomePage from '@/pages/admin/AdminHomePage'
 import AssignmentSettingsPage from '@/pages/admin/AssignmentSettingsPage'
+import AuditLogPage from '@/pages/admin/AuditLogPage'
 import WorkloadPage from '@/pages/admin/WorkloadPage'
 import CatalogPage from '@/pages/admin/catalog/CatalogPage'
 import SlaPoliciesPage from '@/pages/admin/sla/SlaPoliciesPage'
@@ -44,6 +45,7 @@ const PAGES = {
   '/admin': <AdminHomePage />,
   '/admin/users': <UsersPage />,
   '/admin/notifications': <NotificationsPage />,
+  '/admin/audit': <AuditLogPage />,
   '/employee/notifications': <NotificationsPage />,
   '/technician/notifications': <NotificationsPage />,
   '/admin/assignment': <AssignmentSettingsPage />,

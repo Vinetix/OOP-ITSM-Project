@@ -18,6 +18,7 @@ import { LoadingState } from '@/components/LoadingState'
 import { PriorityBadge } from '@/components/PriorityBadge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getRoleHome } from '@/config/roles'
 import { useAsync } from '@/hooks/useAsync'
 import { useAutoRefresh } from '@/hooks/useAutoRefresh'
@@ -32,6 +33,7 @@ import { AssignDialog } from './detail/AssignDialog'
 import { AutoAssignDialog } from './detail/AutoAssignDialog'
 import { EditIncidentDialog } from './detail/EditIncidentDialog'
 import { IncidentBanners } from './detail/IncidentBanners'
+import { IncidentHistory } from './detail/IncidentHistory'
 import { DetailsCard, PriorityCard, SlaCard } from './detail/IncidentSideCards'
 import { NoteBox } from './detail/NoteBox'
 
@@ -188,17 +190,38 @@ export default function IncidentDetailPage() {
             </TextCard>
           )}
 
-          <TextCard title="Activity">
-            <NotesTimeline notes={i.notes} />
-            {i.canAddNote && (
-              <NoteBox
-                incident={i}
-                role={user.role}
-                onDone={applyUpdate}
-                onError={handleActionError}
-              />
-            )}
-          </TextCard>
+          {/* notes are the conversation; history is the audit trail */}
+          <Card>
+            <CardContent>
+              <Tabs defaultValue="activity">
+                <TabsList variant="line" className="mb-4">
+                  <TabsTrigger value="activity" className="px-3 text-base font-bold">
+                    Activity
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="px-3 text-base font-bold">
+                    History
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="activity" className="grid gap-3 text-sm leading-relaxed">
+                  <NotesTimeline notes={i.notes} />
+                  {i.canAddNote && (
+                    <NoteBox
+                      incident={i}
+                      role={user.role}
+                      onDone={applyUpdate}
+                      onError={handleActionError}
+                    />
+                  )}
+                </TabsContent>
+                <TabsContent value="history">
+                  <IncidentHistory
+                    incidentId={i.id}
+                    version={`${i.updatedAt}|${i.notes?.length ?? 0}`}
+                  />
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="grid gap-6">

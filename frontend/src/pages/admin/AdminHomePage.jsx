@@ -62,7 +62,7 @@ const SECTION_DESCRIPTIONS = {
   '/admin/assignment': 'Which strategy picks a technician, and whether it happens automatically.',
   '/admin/workload': 'Each technician’s active incidents against their limit.',
   '/admin/reports': 'Volumes, SLA performance and workload.',
-  '/admin/audit': 'A record of every action taken.',
+  '/admin/audit': 'Every change to every incident, by person or System.',
 }
 
 function CountsPanel() {
