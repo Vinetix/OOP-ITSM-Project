@@ -5,6 +5,7 @@ import { useAuth } from '@/auth/AuthContext'
 import { IncidentCounts } from '@/components/incidents/IncidentCounts'
 import { RecentIncidents } from '@/components/incidents/RecentIncidents'
 import { InfoList } from '@/components/InfoList'
+import { RecentNotifications } from '@/components/notifications/RecentNotifications'
 import { PageHeader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -61,21 +62,24 @@ export default function EmployeeHomePage() {
           />
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-bold">Your details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <InfoList
-              items={[
-                { label: 'Name', value: user.fullName },
-                { label: 'Department', value: user.department || 'Not set' },
-                { label: 'Email', value: user.email },
-                { label: 'Member since', value: formatDate(user.createdAt) },
-              ]}
-            />
-          </CardContent>
-        </Card>
+        <div className="grid gap-6">
+          <RecentNotifications />
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-bold">Your details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <InfoList
+                items={[
+                  { label: 'Name', value: user.fullName },
+                  { label: 'Department', value: user.department || 'Not set' },
+                  { label: 'Email', value: user.email },
+                  { label: 'Member since', value: formatDate(user.createdAt) },
+                ]}
+              />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </>
   )

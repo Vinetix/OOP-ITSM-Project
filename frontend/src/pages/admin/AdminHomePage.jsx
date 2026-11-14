@@ -3,6 +3,8 @@
 import { ArrowRight, Users } from 'lucide-react'
 import { Link } from 'react-router'
 import { usersApi } from '@/api/usersApi'
+import { RecentActivity } from '@/components/audit/RecentActivity'
+import { RecentNotifications } from '@/components/notifications/RecentNotifications'
 import { AssignmentCard, TeamWorkloadCard } from '@/components/assignment/AssignmentHomeCards'
 import { EmptyState } from '@/components/EmptyState'
 import { IncidentCounts } from '@/components/incidents/IncidentCounts'
@@ -256,6 +258,10 @@ export default function AdminHomePage() {
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
           <AssignmentCard />
           <TeamWorkloadCard />
+        </div>
+        <div className="grid items-start gap-6 lg:grid-cols-2">
+          <RecentNotifications />
+          <RecentActivity />
         </div>
         <h2 className="pt-2 text-xl font-bold">People</h2>
         <CountsPanel />

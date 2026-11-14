@@ -12,6 +12,9 @@ problems, technicians work on them, and admins manage users.
 - **Phase F4:** assignment: strategy and auto-assign settings, ranked recommendations
   with reasons in the assign dialog, auto-assign, and workload pages for admins and
   technicians.
+- **Phase F5:** a notification bell and inbox for every role (polled every 30 s, paused
+  while the tab is hidden), an incident History tab from the audit trail, and the admin
+  Audit log with filters kept in the URL.
 
 ## Run it
 
