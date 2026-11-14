@@ -29,6 +29,7 @@ import IncidentListPage from '@/pages/incidents/IncidentListPage'
 import ReportIncidentPage from '@/pages/incidents/ReportIncidentPage'
 import ForbiddenPage from '@/pages/common/ForbiddenPage'
 import NotFoundPage from '@/pages/common/NotFoundPage'
+import NotificationsPage from '@/pages/common/NotificationsPage'
 import ProfilePage from '@/pages/common/ProfilePage'
 import EmployeeHomePage from '@/pages/employee/EmployeeHomePage'
 import MyWorkloadPage from '@/pages/technician/MyWorkloadPage'
@@ -42,6 +43,9 @@ const PAGES = {
   '/technician/profile': <ProfilePage />,
   '/admin': <AdminHomePage />,
   '/admin/users': <UsersPage />,
+  '/admin/notifications': <NotificationsPage />,
+  '/employee/notifications': <NotificationsPage />,
+  '/technician/notifications': <NotificationsPage />,
   '/admin/assignment': <AssignmentSettingsPage />,
   '/admin/workload': <WorkloadPage />,
   '/technician/workload': <MyWorkloadPage />,
@@ -78,6 +82,12 @@ function roleSection(role) {
   }
 }
 
+// /notifications works for everyone: it opens their own role's page
+function NotificationsRedirect() {
+  const { user } = useAuth()
+  return <Navigate to={`${getRoleHome(user.role)}/notifications`} replace />
+}
+
 function RootRedirect() {
   const { status, user } = useAuth()
   if (status === 'loading') return <LoadingState fullPage label="Restoring your session" />
@@ -103,7 +113,12 @@ export const router = createBrowserRouter([
       },
       {
         element: <ProtectedRoute />,
-        children: [roleSection('EMPLOYEE'), roleSection('TECHNICIAN'), roleSection('ADMIN')],
+        children: [
+          roleSection('EMPLOYEE'),
+          roleSection('TECHNICIAN'),
+          roleSection('ADMIN'),
+          { path: '/notifications', element: <NotificationsRedirect /> },
+        ],
       },
       { path: '/forbidden', element: <ForbiddenPage /> },
       { path: '*', element: <NotFoundPage /> },

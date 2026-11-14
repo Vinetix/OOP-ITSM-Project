@@ -3,6 +3,8 @@
 import { NavLink, useLocation } from 'react-router'
 import { Lamp } from '@/components/Lamp'
 import { SoonTag } from '@/components/SoonTag'
+import { countLabel } from '@/components/notifications/NotificationBell'
+import { useNotifications } from '@/notifications/NotificationsContext'
 import { NAVIGATION } from '@/config/navigation'
 import { ROLE_CONFIG } from '@/config/roles'
 import { cn } from '@/lib/utils'
@@ -11,6 +13,7 @@ export function SidebarNav({ role, onNavigate }) {
   const items = NAVIGATION[role] ?? []
   const home = ROLE_CONFIG[role]?.home
   const { pathname } = useLocation()
+  const { unread } = useNotifications()
 
   // an item can list sub-paths that belong to another item (My incidents vs Report incident)
   const lit = (matched, item) =>
@@ -66,6 +69,14 @@ export function SidebarNav({ role, onNavigate }) {
                     />
                     <span className="min-w-0 flex-1 leading-snug">{item.label}</span>
                     {item.soon && <SoonTag />}
+                    {item.badge === 'unread' && unread > 0 && (
+                      <span
+                        aria-label={`${unread} unread`}
+                        className="rounded-full bg-destructive px-1.5 py-0.5 text-[0.7rem] leading-none font-bold text-white tabular-nums"
+                      >
+                        {countLabel(unread)}
+                      </span>
+                    )}
                   </>
                 )
               }}

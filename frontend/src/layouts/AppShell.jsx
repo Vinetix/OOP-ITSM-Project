@@ -5,6 +5,7 @@ import { Menu } from 'lucide-react'
 import { Link, Outlet } from 'react-router'
 import { useAuth } from '@/auth/AuthContext'
 import { BackendStatus } from '@/components/BackendStatus'
+import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { RoleBadge } from '@/components/RoleBadge'
 import { Wordmark } from '@/components/Wordmark'
 import { Button } from '@/components/ui/button'
@@ -38,6 +39,7 @@ export function AppShell() {
             <Wordmark />
           </Link>
           <div className="ml-auto flex items-center gap-3">
+            <NotificationBell />
             <RoleBadge role={user.role} className="hidden sm:inline-flex" />
             <UserMenu />
           </div>

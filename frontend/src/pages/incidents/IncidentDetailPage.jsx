@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getRoleHome } from '@/config/roles'
 import { useAsync } from '@/hooks/useAsync'
 import { useAutoRefresh } from '@/hooks/useAutoRefresh'
+import { useNotifications } from '@/notifications/NotificationsContext'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { getErrorCode, getErrorMessage, getErrorStatus } from '@/lib/errors'
 import { formatDateTime } from '@/lib/format'
@@ -58,6 +59,7 @@ export default function IncidentDetailPage() {
   const { user } = useAuth()
   const listPath = `${getRoleHome(user.role)}/incidents`
   const { data: incident, error, reload, setData } = useAsync(() => incidentsApi.get(id), [id])
+  const notifications = useNotifications()
   // which dialog is open; the name stays while it fades out
   const [dialog, setDialog] = useState({ open: false, name: null })
   // someone else may move the incident on; look again quietly, but not mid-dialog
@@ -113,6 +115,7 @@ export default function IncidentDetailPage() {
   function applyUpdate(updated, message) {
     setData(updated)
     toast.success(message)
+    notifications.refresh() // e.g. assigning clears the admins' "needs a technician" alert
   }
 
   // returns true when handled here (toast and reload), false to let the dialog show it

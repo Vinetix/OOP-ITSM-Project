@@ -21,6 +21,7 @@ import { criticalityOf } from '@/config/catalog'
 import { IMPACTS, URGENCIES } from '@/config/incidents'
 import { useAsync } from '@/hooks/useAsync'
 import { useFormState } from '@/hooks/useFormState'
+import { useNotifications } from '@/notifications/NotificationsContext'
 import { getErrorCode, getErrorMessage } from '@/lib/errors'
 import { estimatePriority } from '@/lib/priority'
 import { validateIncident } from './incidentRules'
@@ -47,6 +48,7 @@ export default function ReportIncidentPage() {
 
 function ReportForm({ services, categories }) {
   const navigate = useNavigate()
+  const notifications = useNotifications()
   const [submitting, setSubmitting] = useState(false)
   const form = useFormState({
     serviceId: '',
@@ -94,6 +96,7 @@ function ReportForm({ services, categories }) {
           ? `${incident.number} reported (${incident.priority}), assigned to ${incident.assignedTechnician.fullName}`
           : `${incident.number} reported (${incident.priority}), waiting for a technician`,
       )
+      notifications.refresh()
       navigate(`/employee/incidents/${incident.id}`)
     } catch (error) {
       // a service without a default category comes back as a business rule

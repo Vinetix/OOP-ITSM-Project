@@ -27,14 +27,14 @@ export const NAVIGATION = {
       icon: ListTodo,
       except: ['/employee/incidents/new'], // that page has its own item
     },
-    { label: 'Notifications', path: '/employee/notifications', icon: Bell, soon: true },
+    { label: 'Notifications', path: '/employee/notifications', icon: Bell, badge: 'unread' },
     { label: 'Profile', path: '/employee/profile', icon: UserRound },
   ],
   TECHNICIAN: [
     { label: 'Home', path: '/technician', icon: House },
     { label: 'My queue', path: '/technician/incidents', icon: Inbox },
     { label: 'My workload', path: '/technician/workload', icon: Gauge },
-    { label: 'Notifications', path: '/technician/notifications', icon: Bell, soon: true },
+    { label: 'Notifications', path: '/technician/notifications', icon: Bell, badge: 'unread' },
     { label: 'Profile', path: '/technician/profile', icon: UserRound },
   ],
   ADMIN: [
@@ -47,6 +47,7 @@ export const NAVIGATION = {
     { label: 'Workload', path: '/admin/workload', icon: Gauge },
     { label: 'Reports', path: '/admin/reports', icon: ChartColumn, soon: true },
     { label: 'Audit log', path: '/admin/audit', icon: ScrollText, soon: true },
+    { label: 'Notifications', path: '/admin/notifications', icon: Bell, badge: 'unread' },
     { label: 'Profile', path: '/admin/profile', icon: UserRound },
   ],
 }

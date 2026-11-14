@@ -3,14 +3,17 @@ import { Outlet } from 'react-router'
 import { AuthProvider } from '@/auth/AuthContext'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { NotificationsProvider } from '@/notifications/NotificationsContext'
 
 export default function App() {
   return (
     <AuthProvider>
-      <TooltipProvider delayDuration={300}>
-        <Outlet />
-        <Toaster />
-      </TooltipProvider>
+      <NotificationsProvider>
+        <TooltipProvider delayDuration={300}>
+          <Outlet />
+          <Toaster />
+        </TooltipProvider>
+      </NotificationsProvider>
     </AuthProvider>
   )
 }
