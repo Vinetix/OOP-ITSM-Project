@@ -1,6 +1,6 @@
 # I-ITSM API Contract
 
-Living document, updated every backend phase. Last update: **Phase 4 (assignment strategies, auto-assign, recommendations, workload)**.
+Living document, updated every backend phase. Last update: **Phase 5 (notifications and audit trail)**.
 Live, always-current docs: `http://localhost:8080/swagger-ui.html` (raw spec: `/v3/api-docs`).
 
 ## Conventions (apply to every endpoint)
@@ -741,6 +741,119 @@ available technicians has an active skill in CLOUD".
 "Assigned to Ravi Kumar" (manual) or "Assigned to Fatima Khan by SMART strategy (score 81/100)" (automatic). An
 automatic assignment on report has no actor (system).
 
+### Notifications (Phase 5)
+
+The system notifies people when something happens to an incident they're involved in. Every notification
+appears in the recipient's **in-app inbox**. **Important** ones (they need someone to act, or concern a P1/P2
+incident) are **also emailed**. Email is simulated in the backend console unless SMTP is configured (see below).
+Nobody is notified about their own action.
+
+| Event | Recipients | Type | Important (emailed) |
+|---|---|---|---|
+| Incident reported | Reporter | `INCIDENT_REPORTED` | no |
+| Still unassigned after classification | All admins | `INCIDENT_UNASSIGNED` | P1/P2 only |
+| Assigned | New technician | `INCIDENT_ASSIGNED` | P1/P2 only |
+| Assigned | Reporter | `INCIDENT_ASSIGNED` | no |
+| Re-assigned | Previous technician | `INCIDENT_REASSIGNED` | no |
+| Acknowledged / work started | Reporter | `INCIDENT_ACKNOWLEDGED` / `WORK_STARTED` | no |
+| Information requested | Reporter | `INFO_REQUESTED` | yes |
+| Information provided | Technician | `INFO_PROVIDED` | no |
+| Resolved | Reporter | `INCIDENT_RESOLVED` | yes |
+| Verified | Technician | `RESOLUTION_VERIFIED` | no |
+| Reopened | Technician | `INCIDENT_REOPENED` | yes |
+| Closed | Reporter | `INCIDENT_CLOSED` | no |
+| Priority changed | Reporter and technician | `PRIORITY_CHANGED` | when it becomes P1 |
+| Reporter adds a comment | Technician | `COMMENT_ADDED` | no |
+| Details edited | Technician | `DETAILS_UPDATED` | no |
+
+When an incident is assigned, any unread `INCIDENT_UNASSIGNED` alerts for it are marked read automatically.
+
+| Method | Path | Roles | Params | Success |
+|---|---|---|---|---|
+| GET | `/api/notifications` | Any | `unreadOnly` (default false), `page`, `size` (default 20), `sort` (default `createdAt,desc`) | `200` Page of NotificationResponse |
+| GET | `/api/notifications/unread-count` | Any | – | `200` `{ "unread": 3 }` |
+| POST | `/api/notifications/{id}/read` | Any (own only) | – | `200` NotificationResponse |
+| POST | `/api/notifications/read-all` | Any | – | `200` `{ "updated": 5 }` |
+
+Someone else's notification id gives `404 RESOURCE_NOT_FOUND`. Marking an already read notification read again
+is harmless; it keeps the first `readAt`.
+
+**NotificationResponse** (`readAt`, `incidentId` and `incidentNumber` may be absent)
+
+```json
+{
+  "id": 12,
+  "type": "INCIDENT_RESOLVED",
+  "title": "INC00005 resolved: please confirm",
+  "body": "Resolved: Folder was moved by a sync rule; restored it from last night's backup. Please confirm the fix, or reopen the incident if the problem remains.",
+  "incidentId": 5,
+  "incidentNumber": "INC00005",
+  "important": true,
+  "read": false,
+  "createdAt": "2026-11-14T09:00:00Z"
+}
+```
+
+Use `incidentId` to link to the incident detail page.
+
+**Real email (optional).** Add to your own `application-local.properties`, e.g. a free Mailtrap sandbox:
+
+```properties
+spring.mail.host=sandbox.smtp.mailtrap.io
+spring.mail.port=2525
+spring.mail.username=<mailtrap username>
+spring.mail.password=<mailtrap password>
+app.mail.from=I-ITSM Service Desk <no-reply@itsm.local>
+```
+
+The startup log says `Email notifications: SMTP` or `Email notifications: SIMULATED`. Emails are sent in the
+background, and a failed email never affects the incident or the in-app notification.
+
+### Audit trail (Phase 5)
+
+Every incident event is recorded, in the same transaction as the change, as a write-once audit entry. The actor
+is a user, or **System** for automatic steps (classification, automatic assignment).
+
+| `action` | Recorded when | from/to status |
+|---|---|---|
+| `REPORTED` | Incident created | to `NEW` |
+| `CLASSIFY`, `ASSIGN`, `ACKNOWLEDGE`, `START`, `REQUEST_INFO`, `PROVIDE_INFO`, `RESOLVE`, `VERIFY`, `REOPEN`, `CLOSE` | Each lifecycle step (`details` is the step's text, e.g. "Assigned to Fatima Khan by SMART strategy (score 81/100)") | yes |
+| `PRIORITY_CHANGED` | Priority recalculated after an edit | – |
+| `DETAILS_UPDATED` | Details edited (lists the fields) | – |
+| `NOTE_ADDED` | Comment or work note added (questions, answers and reopen reasons appear under their lifecycle step) | – |
+
+| Method | Path | Roles | Params | Success |
+|---|---|---|---|---|
+| GET | `/api/incidents/{id}/history` | Reporter, assigned technician, ADMIN (same as viewing the incident) | – | `200` AuditEntryResponse[] (oldest first) |
+| GET | `/api/audit` | ADMIN | `incidentNumber` (exact, any case), `actorId`, `systemOnly=true`, `action`, `from`, `to` (YYYY-MM-DD, UTC, `to` inclusive), `page`, `size` (default 20), `sort` (default `occurredAt,desc`) | `200` Page of AuditEntryResponse |
+
+Errors:
+- an unknown `action` or a malformed date gives `400 INVALID_PARAMETER`;
+- `to` before `from` gives `400 INVALID_REQUEST`;
+- history of an incident you can't view gives `403` / `404`, as for the incident.
+
+**AuditEntryResponse** (`actorId`, `actorRole`, `fromStatus`, `toStatus`, `details` may be absent)
+
+```json
+{
+  "id": 3,
+  "occurredAt": "2026-11-14T09:00:01Z",
+  "incidentId": 1,
+  "incidentNumber": "INC00001",
+  "actorId": 1,
+  "actorName": "Anita Rao",
+  "actorRole": "ADMIN",
+  "system": false,
+  "action": "ASSIGN",
+  "fromStatus": "CLASSIFIED",
+  "toStatus": "ASSIGNED",
+  "details": "Assigned to Fatima Khan"
+}
+```
+
+For system entries: `"actorName": "System"`, `"system": true`, no `actorId` / `actorRole`. Names are stored as they
+were at the time, so renaming a user later doesn't rewrite history.
+
 ## Demo data
 
 Seeded on first start when the tables are empty.
@@ -762,6 +875,11 @@ Seeded on first start when the tables are empty.
 
 **Assignment settings:** `SMART`, auto-assign on report **on** (created on first start). The seeder switches
 auto-assign off while it runs and restores it, so the 8 incidents below always end in the same states.
+
+**History and inboxes:** seeding goes through the real services, so every demo incident has a full audit history
+(#1 has 6 entries: reported, classified by System, assigned by Anita Rao, acknowledged, started, work note) and the
+demo users already have notifications (Rahul 11, Divya 10, Kiran 9, Anita 8 of which 2 unread for #4 and #8,
+Sneha 3, Ravi 3, Fatima 1, Arjun 1).
 
 **Demo incidents (8)**, all created through the real lifecycle:
 
@@ -792,6 +910,9 @@ auto-assign off while it runs and restores it, so the 8 incidents below always e
 | EMPLOYEE | `rahul.verma@itsm.com` (Finance), `divya.nair@itsm.com` (HR), `kiran.patel@itsm.com` (Sales) |
 
 ## Changelog
+
+- **Phase 5:** notifications (in-app + email, simulated by default) with `/api/notifications` endpoints; audit
+  trail with `GET /api/incidents/{id}/history` and admin `GET /api/audit`. No changes to existing endpoints.
 
 - **Phase 4:** assignment strategies (`SKILL_BASED`, `LEAST_LOADED`, `SMART`), admin settings
   (`/api/assignment/settings`), auto-assign on report (report may now return `ASSIGNED`),
