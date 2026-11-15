@@ -1,6 +1,6 @@
 package com.itsm.notification;
 
-/** Why a notification was sent. Phase 6 adds SLA_WARNING, SLA_BREACHED and ESCALATED. */
+/** Why a notification was sent. */
 public enum NotificationType {
     INCIDENT_REPORTED,
     INCIDENT_UNASSIGNED,
@@ -16,5 +16,8 @@ public enum NotificationType {
     INCIDENT_CLOSED,
     PRIORITY_CHANGED,
     DETAILS_UPDATED,
-    COMMENT_ADDED
+    COMMENT_ADDED,
+    SLA_WARNING,
+    SLA_BREACHED,
+    ESCALATED
 }

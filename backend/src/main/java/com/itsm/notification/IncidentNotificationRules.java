@@ -5,13 +5,18 @@ import com.itsm.incident.NoteType;
 import com.itsm.incident.event.IncidentAssignedEvent;
 import com.itsm.incident.event.IncidentCreatedEvent;
 import com.itsm.incident.event.IncidentDetailsUpdatedEvent;
+import com.itsm.incident.event.IncidentEscalatedEvent;
 import com.itsm.incident.event.IncidentEvent;
 import com.itsm.incident.event.IncidentNoteAddedEvent;
 import com.itsm.incident.event.IncidentPriorityChangedEvent;
+import com.itsm.incident.event.IncidentSlaBreachedEvent;
+import com.itsm.incident.event.IncidentSlaWarningEvent;
 import com.itsm.incident.event.IncidentStatusChangedEvent;
 import com.itsm.incident.priority.Priority;
+import com.itsm.incident.sla.SlaTarget;
 import com.itsm.incident.state.IncidentStatus;
 import com.itsm.user.Role;
+import com.itsm.user.Technician;
 import com.itsm.user.User;
 import com.itsm.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -53,6 +58,9 @@ public class IncidentNotificationRules {
                             incident.getReporter().getFullName() + " added information to \"" + incident.getTitle() + "\".", false);
                 }
             }
+            case IncidentSlaWarningEvent e -> slaWarning(out, e, incident);
+            case IncidentSlaBreachedEvent e -> slaBreached(out, e, incident);
+            case IncidentEscalatedEvent e -> escalated(out, e, incident);
             case IncidentDetailsUpdatedEvent e -> out.add(incident.getAssignedTechnician(), NotificationType.DETAILS_UPDATED,
                     incident.getNumber() + " was updated", "Changed: " + String.join(", ", e.changedFields()) + ".", false);
             default -> { /* no notification */ }
@@ -112,6 +120,61 @@ public class IncidentNotificationRules {
             case CLOSE -> out.add(reporter, NotificationType.INCIDENT_CLOSED, number + " closed",
                     "\"" + incident.getTitle() + "\" is now closed. Thank you for reporting it.", false);
         }
+    }
+
+    // ---------------- SLA monitor (Phase 6): all important, reporter not involved ----------------
+
+    /** Assigned technician; admins when nobody is assigned. */
+    private void slaWarning(Messages out, IncidentSlaWarningEvent event, Incident incident) {
+        String title = incident.getNumber() + " " + targetLabel(event.target()) + " SLA at risk";
+        String body = "75% of the " + event.targetMinutes() + "-minute " + targetLabel(event.target())
+                + " target for \"" + incident.getTitle() + "\" (" + incident.getPriority() + ") has been used. "
+                + (event.target() == SlaTarget.RESPONSE ? "Please acknowledge it soon." : "Please resolve it soon.");
+        if (incident.getAssignedTechnician() != null) {
+            out.add(incident.getAssignedTechnician(), NotificationType.SLA_WARNING, title, body, true);
+        } else {
+            activeAdmins().forEach(admin -> out.add(admin, NotificationType.SLA_WARNING, title,
+                    body.replace("Please acknowledge it soon.", "It still has no technician."), true));
+        }
+    }
+
+    /** Assigned technician and all admins. */
+    private void slaBreached(Messages out, IncidentSlaBreachedEvent event, Incident incident) {
+        String title = incident.getNumber() + " missed its " + targetLabel(event.target()) + " SLA";
+        String body = "\"" + incident.getTitle() + "\" (" + incident.getPriority() + ") missed the "
+                + event.targetMinutes() + "-minute " + targetLabel(event.target()) + " target. A violation was recorded.";
+        out.add(incident.getAssignedTechnician(), NotificationType.SLA_BREACHED, title, body, true);
+        activeAdmins().forEach(admin -> out.add(admin, NotificationType.SLA_BREACHED, title, body, true));
+    }
+
+    /** Level 1: assigned technician. Level 2: available senior technicians (admins if none). Level 3: admins. */
+    private void escalated(Messages out, IncidentEscalatedEvent event, Incident incident) {
+        String title = incident.getNumber() + " escalated (level " + event.level() + ")";
+        String body = "\"" + incident.getTitle() + "\" (" + incident.getPriority() + ", assigned to "
+                + name(incident.getAssignedTechnician()) + ") has not been acknowledged. " + event.reason() + ".";
+        switch (event.level()) {
+            case 1 -> out.add(incident.getAssignedTechnician(), NotificationType.ESCALATED, title,
+                    body + " Please acknowledge it now.", true);
+            case 2 -> {
+                List<User> seniors = availableSeniors(event.assignedTechnicianId());
+                List<User> recipients = seniors.isEmpty() ? activeAdmins() : seniors;
+                recipients.forEach(r -> out.add(r, NotificationType.ESCALATED, title,
+                        body + " Please take it over or help the assigned technician.", true));
+            }
+            default -> activeAdmins().forEach(admin -> out.add(admin, NotificationType.ESCALATED, title,
+                    body + " Consider re-assigning it.", true));
+        }
+    }
+
+    private List<User> availableSeniors(Long excludeTechnicianId) {
+        return userRepository.findAll().stream()
+                .filter(u -> u instanceof Technician t && t.isSenior() && t.isAvailable() && t.isActive()
+                        && !t.getId().equals(excludeTechnicianId))
+                .toList();
+    }
+
+    private static String targetLabel(SlaTarget target) {
+        return target == SlaTarget.RESPONSE ? "response" : "resolution";
     }
 
     /** Small user list, so loading all users and filtering is fine (avoids changing B's repository). */

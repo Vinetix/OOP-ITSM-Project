@@ -3,11 +3,15 @@ package com.itsm.audit;
 import com.itsm.incident.Incident;
 import com.itsm.incident.IncidentRepository;
 import com.itsm.incident.NoteType;
+import com.itsm.incident.sla.EscalationPolicy;
 import com.itsm.incident.event.IncidentCreatedEvent;
 import com.itsm.incident.event.IncidentDetailsUpdatedEvent;
+import com.itsm.incident.event.IncidentEscalatedEvent;
 import com.itsm.incident.event.IncidentEvent;
 import com.itsm.incident.event.IncidentNoteAddedEvent;
 import com.itsm.incident.event.IncidentPriorityChangedEvent;
+import com.itsm.incident.event.IncidentSlaBreachedEvent;
+import com.itsm.incident.event.IncidentSlaWarningEvent;
 import com.itsm.incident.event.IncidentStatusChangedEvent;
 import com.itsm.incident.state.IncidentStatus;
 import com.itsm.user.User;
@@ -49,6 +53,12 @@ public class AuditEventListener {
             case IncidentDetailsUpdatedEvent e ->
                     record(e, AuditAction.DETAILS_UPDATED, null, null, "Updated " + String.join(", ", e.changedFields()));
             case IncidentNoteAddedEvent e -> recordNote(e);
+            case IncidentSlaWarningEvent e -> record(e, AuditAction.SLA_WARNING, null, null,
+                    label(e.target().name()) + " SLA at risk: 75% of the " + e.targetMinutes() + "-minute target used");
+            case IncidentSlaBreachedEvent e -> record(e, AuditAction.SLA_BREACHED, null, null,
+                    label(e.target().name()) + " SLA breached: " + e.targetMinutes() + "-minute target missed");
+            case IncidentEscalatedEvent e -> record(e, AuditAction.ESCALATED, null, null,
+                    "Escalated to level " + e.level() + " (" + EscalationPolicy.describe(e.level()) + "). " + e.reason());
             default -> { /* not audited (see class comment) */ }
         }
     }
@@ -60,6 +70,10 @@ public class AuditEventListener {
         } else if (event.type() == NoteType.WORK_NOTE) {
             record(event, AuditAction.NOTE_ADDED, null, null, "Added a work note");
         }
+    }
+
+    private static String label(String target) {
+        return target.charAt(0) + target.substring(1).toLowerCase();
     }
 
     private void record(IncidentEvent event, AuditAction action, IncidentStatus from, IncidentStatus to, String details) {

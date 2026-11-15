@@ -4,7 +4,7 @@ import com.itsm.incident.state.IncidentAction;
 
 /**
  * What happened to an incident. The lifecycle actions mirror IncidentAction; the others come from
- * non-lifecycle events. Phase 6 adds the SLA and escalation actions.
+ * non-lifecycle events, including the SLA monitor's warnings, breaches and escalations (Phase 6).
  */
 public enum AuditAction {
     REPORTED,
@@ -20,7 +20,10 @@ public enum AuditAction {
     CLOSE,
     PRIORITY_CHANGED,
     DETAILS_UPDATED,
-    NOTE_ADDED;
+    NOTE_ADDED,
+    SLA_WARNING,
+    SLA_BREACHED,
+    ESCALATED;
 
     /** Explicit mapping: adding a lifecycle action without an audit action is a compile error. */
     public static AuditAction of(IncidentAction action) {
