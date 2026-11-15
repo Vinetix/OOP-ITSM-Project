@@ -42,13 +42,8 @@ export const URGENCIES = [
   { value: 'CRITICAL', label: 'Critical', description: 'Immediate business or financial loss' },
 ]
 
-// SLA status uses the status lamps: one colour, one meaning
-export const SLA_STATUSES = {
-  ON_TRACK: { label: 'On track', tone: 'go' },
-  AT_RISK: { label: 'At risk', tone: 'caution' },
-  BREACHED: { label: 'Breached', tone: 'stop' },
-  MET: { label: 'Met', tone: 'go' },
-}
+// SLA statuses now live in config/sla.js (kept available here for older imports)
+export { SLA_STATUSES } from './sla'
 
 export const NOTE_TYPES = {
   COMMENT: { label: 'Comment' },

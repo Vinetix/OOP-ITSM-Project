@@ -6,6 +6,7 @@ import { CriticalityBadge } from '@/components/CriticalityBadge'
 import { InfoList } from '@/components/InfoList'
 import { PriorityBadge } from '@/components/PriorityBadge'
 import { SlaCountdown } from '@/components/incidents/SlaCountdown'
+import { SlaProgress } from '@/components/incidents/SlaProgress'
 import { SlaStatusBadge } from '@/components/incidents/SlaStatusBadge'
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { IMPACTS, URGENCIES, labelOf } from '@/config/incidents'
@@ -104,57 +105,65 @@ export function PriorityCard({ incident }) {
   )
 }
 
+// One deadline: target, due time, live countdown, progress, and when it stopped.
+function SlaRow({ title, targetMinutes, startedAt, dueAt, stoppedAt, stoppedLabel, breached }) {
+  return (
+    <div className="grid gap-2">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <span className="font-semibold">
+          {title}{' '}
+          <span className="font-normal text-muted-foreground">
+            · {formatMinutes(targetMinutes)}
+          </span>
+        </span>
+        <SlaCountdown
+          dueAt={dueAt}
+          startedAt={startedAt}
+          stoppedAt={stoppedAt}
+          breached={breached}
+        />
+      </div>
+      <SlaProgress startedAt={startedAt} dueAt={dueAt} stoppedAt={stoppedAt} />
+      <p className="text-xs text-muted-foreground">
+        {stoppedAt ? `${stoppedLabel} ${formatDateTime(stoppedAt)} · ` : ''}Due{' '}
+        {formatDateTime(dueAt)}
+      </p>
+    </div>
+  )
+}
+
 export function SlaCard({ sla }) {
   if (!sla) return null
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-lg font-bold">SLA</CardTitle>
-        <CardAction>
+        <CardAction className="flex items-center gap-2">
+          <span className="rounded-sm bg-muted px-1.5 py-0.5 text-xs font-semibold">
+            {sla.scope === 'SERVICE' ? 'Service policy' : 'Default policy'}
+          </span>
           <SlaStatusBadge status={sla.status} />
         </CardAction>
       </CardHeader>
-      <CardContent className="grid gap-4">
-        <span className="w-fit rounded-sm bg-muted px-2 py-0.5 text-xs font-semibold">
-          {sla.scope === 'SERVICE' ? 'Service-specific SLA' : 'Default SLA'}
-        </span>
-        <dl className="grid gap-4">
-          <div className="grid gap-1">
-            <dt className="text-sm text-muted-foreground">
-              First response within {formatMinutes(sla.responseTargetMinutes)}
-            </dt>
-            <dd>
-              <SlaCountdown
-                dueAt={sla.responseDueAt}
-                doneAt={sla.respondedAt}
-                breached={sla.responseBreached}
-                doneLabel="Responded"
-              />
-            </dd>
-          </div>
-          <div className="grid gap-1">
-            <dt className="text-sm text-muted-foreground">
-              Resolution within {formatMinutes(sla.resolutionTargetMinutes)}
-            </dt>
-            <dd>
-              <SlaCountdown
-                dueAt={sla.resolutionDueAt}
-                doneAt={sla.resolvedAt}
-                breached={sla.resolutionBreached}
-                doneLabel="Resolved"
-              />
-            </dd>
-          </div>
-        </dl>
-        {(sla.responseBreached || sla.resolutionBreached) && (
-          <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm font-semibold text-destructive">
-            {sla.responseBreached && sla.resolutionBreached
-              ? 'Both deadlines were missed.'
-              : sla.responseBreached
-                ? 'The response deadline was missed.'
-                : 'The resolution deadline was missed.'}
-          </p>
-        )}
+      <CardContent className="grid gap-5">
+        <SlaRow
+          title="Response"
+          targetMinutes={sla.responseTargetMinutes}
+          startedAt={sla.startedAt}
+          dueAt={sla.responseDueAt}
+          stoppedAt={sla.respondedAt}
+          stoppedLabel="Acknowledged"
+          breached={sla.responseBreached}
+        />
+        <SlaRow
+          title="Resolution"
+          targetMinutes={sla.resolutionTargetMinutes}
+          startedAt={sla.startedAt}
+          dueAt={sla.resolutionDueAt}
+          stoppedAt={sla.resolvedAt}
+          stoppedLabel="Resolved"
+          breached={sla.resolutionBreached}
+        />
       </CardContent>
     </Card>
   )

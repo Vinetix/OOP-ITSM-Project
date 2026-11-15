@@ -1,7 +1,7 @@
 // One incident, for whoever may see it: reporter, assigned technician or admin.
 // The buttons come from the server's allowedActions; every action returns the
 // updated incident, which simply replaces what's on screen.
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, FileSearch, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import { Link, Navigate, useParams } from 'react-router'
@@ -9,6 +9,7 @@ import { incidentsApi } from '@/api/incidentsApi'
 import { useAuth } from '@/auth/AuthContext'
 import { EmptyState } from '@/components/EmptyState'
 import { ErrorAlert } from '@/components/ErrorAlert'
+import { EscalationBadge } from '@/components/incidents/EscalationBadge'
 import { IncidentStatusBadge } from '@/components/incidents/IncidentStatusBadge'
 import { LifecycleStepper } from '@/components/incidents/LifecycleStepper'
 import { NotesTimeline } from '@/components/incidents/NotesTimeline'
@@ -32,6 +33,7 @@ import { ACTIONS } from './detail/actions'
 import { AssignDialog } from './detail/AssignDialog'
 import { AutoAssignDialog } from './detail/AutoAssignDialog'
 import { EditIncidentDialog } from './detail/EditIncidentDialog'
+import { EscalationBanner } from './detail/EscalationBanner'
 import { IncidentBanners } from './detail/IncidentBanners'
 import { IncidentHistory } from './detail/IncidentHistory'
 import { DetailsCard, PriorityCard, SlaCard } from './detail/IncidentSideCards'
@@ -65,7 +67,22 @@ export default function IncidentDetailPage() {
   // which dialog is open; the name stays while it fades out
   const [dialog, setDialog] = useState({ open: false, name: null })
   // someone else may move the incident on; look again quietly, but not mid-dialog
-  useAutoRefresh(() => reload({ silent: true }), { enabled: !dialog.open && !error })
+  // the SLA monitor runs every minute, so look again every 60 s (not mid-dialog)
+  useAutoRefresh(() => reload({ silent: true }), {
+    enabled: !dialog.open && !error,
+    intervalMs: 60_000,
+  })
+
+  // say so when a refetch brings a higher escalation level
+  const seenLevel = useRef(null)
+  useEffect(() => {
+    if (!incident) return
+    const before = seenLevel.current
+    if (before !== null && incident.escalationLevel > before) {
+      toast.warning(`${incident.number} escalated to level ${incident.escalationLevel}`)
+    }
+    seenLevel.current = incident.escalationLevel
+  }, [incident])
   usePageTitle(incident ? `${incident.number} ${incident.title}` : 'Incident')
 
   const back = (
@@ -138,6 +155,7 @@ export default function IncidentDetailPage() {
           <IncidentStatusBadge status={i.status} />
           <PriorityBadge priority={i.priority} />
           <SlaStatusBadge status={i.sla?.status} className="ml-1" />
+          <EscalationBadge level={i.escalationLevel} escalatedAt={i.escalatedAt} />
         </div>
         <h1 className="text-3xl leading-tight font-extrabold text-balance sm:text-4xl">
           {i.title}
@@ -146,6 +164,7 @@ export default function IncidentDetailPage() {
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="grid min-w-0 gap-6">
+          <EscalationBanner incident={i} user={user} onAction={openAction} />
           <IncidentBanners incident={i} user={user} onAction={openAction} />
 
           <Card>

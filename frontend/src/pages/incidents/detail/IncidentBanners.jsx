@@ -21,7 +21,8 @@ export function IncidentBanners({ incident, user, onAction }) {
         can('REOPEN') && ['REOPEN', 'Not fixed: reopen'],
       ].filter(Boolean),
     }
-  } else if (isAssignee && incident.status === 'ASSIGNED') {
+  } else if (isAssignee && incident.status === 'ASSIGNED' && !incident.escalationLevel) {
+    // (an escalated one gets the escalation banner and its own Acknowledge button)
     banner = {
       text: 'Acknowledge to stop the response clock.',
       buttons: can('ACKNOWLEDGE') ? [['ACKNOWLEDGE', 'Acknowledge']] : [],

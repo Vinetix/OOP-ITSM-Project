@@ -2,7 +2,7 @@
 // met (green tick).
 import { CircleCheck } from 'lucide-react'
 import { Lamp } from '@/components/Lamp'
-import { SLA_STATUSES } from '@/config/incidents'
+import { SLA_STATUSES } from '@/config/sla'
 import { cn } from '@/lib/utils'
 
 export function SlaStatusBadge({ status, className }) {

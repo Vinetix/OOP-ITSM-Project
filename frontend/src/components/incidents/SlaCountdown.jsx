@@ -1,32 +1,54 @@
-// One SLA deadline, live: "Due in 12 min" or "3 min overdue" (red), refreshed
-// every 30 seconds. Once the step is done it shows when, and whether in time.
+// One SLA deadline, ticking every second: "4m 12s left" (amber once 75% of the
+// time is used), "Overdue 3m 10s" in red, or once stopped "Met in 3m 20s"
+// (green) or "Late by 1m 05s" (red).
 import { useNow } from '@/hooks/useNow'
 import { formatDateTime } from '@/lib/format'
-import { isPast, timeUntil } from '@/lib/time'
+import { clockState, elapsedFraction, formatRemaining, remainingMs } from '@/lib/sla'
 import { cn } from '@/lib/utils'
 
-export function SlaCountdown({ dueAt, doneAt, breached, doneLabel = 'Done', className }) {
+export function SlaCountdown({
+  dueAt,
+  startedAt,
+  stoppedAt,
+  breached,
+  compact = false,
+  className,
+}) {
   const now = useNow()
+  if (!dueAt) return null
+  const state = clockState(dueAt, stoppedAt, breached, now)
+  const used = elapsedFraction(startedAt, dueAt, stoppedAt, now)
 
-  if (doneAt) {
-    const late = breached || new Date(doneAt) > new Date(dueAt)
-    return (
-      <span className={cn('grid', className)}>
-        <span className={cn('font-semibold', late ? 'text-destructive' : 'text-lamp-go')}>
-          {late ? `${doneLabel}, late` : `${doneLabel} in time`}
-        </span>
-        <span className="text-xs text-muted-foreground">{formatDateTime(doneAt)}</span>
-      </span>
-    )
+  let text
+  let tone
+  if (state === 'stopped-met') {
+    text = `Met in ${formatRemaining(new Date(stoppedAt) - new Date(startedAt ?? stoppedAt))}`
+    tone = 'text-[color:color-mix(in_oklab,var(--lamp-go)_75%,black)]'
+  } else if (state === 'stopped-late') {
+    text = `Late by ${formatRemaining(Math.max(new Date(stoppedAt) - new Date(dueAt), 0))}`
+    tone = 'text-destructive'
+  } else if (state === 'overdue') {
+    text = formatRemaining(remainingMs(dueAt, now)) // "Overdue …"
+    tone = 'text-destructive'
+  } else {
+    text = `${formatRemaining(remainingMs(dueAt, now))} left`
+    tone =
+      used >= 0.75
+        ? 'text-[color:color-mix(in_oklab,var(--lamp-caution)_70%,black)]'
+        : 'text-foreground'
   }
 
-  const overdue = isPast(dueAt, now)
   return (
-    <span className={cn('grid', className)} title={`Due ${formatDateTime(dueAt)}`}>
-      <span className={cn('font-semibold tabular-nums', overdue && 'text-destructive')}>
-        {overdue ? timeUntil(dueAt, now) : `Due ${timeUntil(dueAt, now)}`}
-      </span>
-      <span className="text-xs text-muted-foreground">{formatDateTime(dueAt)}</span>
+    <span
+      title={`Due ${formatDateTime(dueAt)}`}
+      className={cn(
+        'font-semibold whitespace-nowrap tabular-nums',
+        compact ? 'text-xs' : 'text-base',
+        tone,
+        className,
+      )}
+    >
+      {text}
     </span>
   )
 }

@@ -1,9 +1,11 @@
 // Label and icon per audit action. Unknown actions (Phase 6 adds SLA and
 // escalation ones) show their raw name with a history icon.
 import {
+  AlarmClockOff,
   Archive,
   BadgeCheck,
   CircleCheck,
+  Clock,
   FilePlus,
   Gauge,
   Hand,
@@ -13,6 +15,7 @@ import {
   MessageSquare,
   PencilLine,
   RotateCcw,
+  Siren,
   Tags,
   UserCheck,
   Wrench,
@@ -33,6 +36,9 @@ export const AUDIT_ACTIONS = [
   { value: 'PRIORITY_CHANGED', label: 'Priority changed', icon: Gauge },
   { value: 'DETAILS_UPDATED', label: 'Details updated', icon: PencilLine },
   { value: 'NOTE_ADDED', label: 'Note added', icon: MessageSquare },
+  { value: 'SLA_WARNING', label: 'SLA at risk', icon: Clock },
+  { value: 'SLA_BREACHED', label: 'SLA breached', icon: AlarmClockOff },
+  { value: 'ESCALATED', label: 'Escalated', icon: Siren },
 ]
 
 export function auditAction(value) {

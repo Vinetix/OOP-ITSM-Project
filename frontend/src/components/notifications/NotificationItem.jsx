@@ -14,9 +14,11 @@ export function NotificationContent({ notification: n }) {
       <span
         className={cn(
           'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full',
-          n.important
-            ? 'bg-lamp-caution/15 text-[color:color-mix(in_oklab,var(--lamp-caution)_70%,black)]'
-            : 'bg-muted text-muted-foreground',
+          n.type === 'ESCALATED'
+            ? 'bg-lamp-stop/12 text-lamp-stop'
+            : n.important
+              ? 'bg-lamp-caution/15 text-[color:color-mix(in_oklab,var(--lamp-caution)_70%,black)]'
+              : 'bg-muted text-muted-foreground',
         )}
       >
         <Icon aria-hidden="true" className="size-4" />
@@ -55,7 +57,12 @@ export function NotificationItem({ notification: n, onOpen, onMarkRead }) {
     <div
       className={cn(
         'flex items-start gap-2 border-l-[3px] px-4 py-3 transition-colors',
-        n.important ? 'border-l-lamp-caution' : 'border-l-transparent',
+        // escalations get a red edge instead of the usual amber
+        n.type === 'ESCALATED'
+          ? 'border-l-lamp-stop'
+          : n.important
+            ? 'border-l-lamp-caution'
+            : 'border-l-transparent',
         !n.read && 'bg-role-soft/50',
       )}
     >

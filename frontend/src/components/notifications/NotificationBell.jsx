@@ -106,7 +106,11 @@ export function NotificationBell() {
                 onSelect={() => open(n)}
                 className={cn(
                   'rounded-none border-l-[3px] px-4 py-3',
-                  n.important ? 'border-l-lamp-caution' : 'border-l-transparent',
+                  n.type === 'ESCALATED'
+                    ? 'border-l-lamp-stop'
+                    : n.important
+                      ? 'border-l-lamp-caution'
+                      : 'border-l-transparent',
                   !n.read && 'bg-role-soft/50',
                 )}
               >

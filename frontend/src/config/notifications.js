@@ -1,10 +1,12 @@
 // Icon per notification type. Unknown types (Phase 6 adds SLA ones) get a bell.
 import {
+  AlarmClockOff,
   Archive,
   ArrowRightLeft,
   BadgeCheck,
   Bell,
   CircleCheck,
+  Clock,
   Gauge,
   Hand,
   Inbox,
@@ -13,6 +15,7 @@ import {
   MessageSquare,
   PencilLine,
   RotateCcw,
+  Siren,
   UserCheck,
   UserX,
   Wrench,
@@ -34,6 +37,9 @@ const ICONS = {
   PRIORITY_CHANGED: Gauge,
   DETAILS_UPDATED: PencilLine,
   COMMENT_ADDED: MessageSquare,
+  SLA_WARNING: Clock,
+  SLA_BREACHED: AlarmClockOff,
+  ESCALATED: Siren,
 }
 
 export const notificationIcon = (type) => ICONS[type] ?? Bell
