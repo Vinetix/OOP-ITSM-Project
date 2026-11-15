@@ -2,7 +2,7 @@
 // their queue, admins everything (the server decides). Status, sort and page
 // live in the URL, so refresh and shared links keep them.
 import { useEffect } from 'react'
-import { FilePlus, Inbox } from 'lucide-react'
+import { FilePlus, Inbox, RefreshCw } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { incidentsApi } from '@/api/incidentsApi'
@@ -164,14 +164,27 @@ export default function IncidentListPage() {
         title={view.title}
         description={view.description}
         actions={
-          user.role === 'EMPLOYEE' && (
-            <Button asChild size="lg" className="h-10">
-              <Link to="/employee/incidents/new">
-                <FilePlus aria-hidden="true" />
-                Report incident
-              </Link>
+          <>
+            {/* countdowns tick by themselves; this re-reads statuses and escalations */}
+            <Button
+              variant="outline"
+              size="lg"
+              className="h-10"
+              onClick={() => list.reload()}
+              disabled={list.loading}
+            >
+              <RefreshCw aria-hidden="true" className={list.loading ? 'animate-spin' : undefined} />
+              Refresh
             </Button>
-          )
+            {user.role === 'EMPLOYEE' && (
+              <Button asChild size="lg" className="h-10">
+                <Link to="/employee/incidents/new">
+                  <FilePlus aria-hidden="true" />
+                  Report incident
+                </Link>
+              </Button>
+            )}
+          </>
         }
       />
 

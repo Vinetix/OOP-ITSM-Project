@@ -21,6 +21,7 @@ import AuditLogPage from '@/pages/admin/AuditLogPage'
 import WorkloadPage from '@/pages/admin/WorkloadPage'
 import CatalogPage from '@/pages/admin/catalog/CatalogPage'
 import SlaPoliciesPage from '@/pages/admin/sla/SlaPoliciesPage'
+import SlaViolationsPage from '@/pages/admin/sla/SlaViolationsPage'
 import UsersPage from '@/pages/admin/UsersPage'
 import LoginPage from '@/pages/auth/LoginPage'
 import RegisterPage from '@/pages/auth/RegisterPage'
@@ -46,6 +47,7 @@ const PAGES = {
   '/admin/users': <UsersPage />,
   '/admin/notifications': <NotificationsPage />,
   '/admin/audit': <AuditLogPage />,
+  '/admin/sla': <SlaViolationsPage />,
   '/employee/notifications': <NotificationsPage />,
   '/technician/notifications': <NotificationsPage />,
   '/admin/assignment': <AssignmentSettingsPage />,

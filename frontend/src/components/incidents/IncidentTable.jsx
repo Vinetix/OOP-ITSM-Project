@@ -15,24 +15,28 @@ import {
 } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { formatDateTime } from '@/lib/format'
-import { timeSince, timeUntil } from '@/lib/time'
+import { nextDeadline } from '@/lib/sla'
+import { timeSince } from '@/lib/time'
 import { cn } from '@/lib/utils'
+import { EscalationBadge } from './EscalationBadge'
 import { IncidentStatusBadge } from './IncidentStatusBadge'
+import { SlaCountdown } from './SlaCountdown'
 import { SlaStatusBadge } from './SlaStatusBadge'
-
-const OPEN_SLA = new Set(['ON_TRACK', 'AT_RISK', 'BREACHED'])
 
 const COLUMNS = {
   number: {
     head: 'Number',
     cell: (i, basePath) => (
-      <Link
-        to={`${basePath}/${i.id}`}
-        onClick={(e) => e.stopPropagation()}
-        className="rounded-sm font-mono text-[0.8rem] font-semibold whitespace-nowrap outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
-      >
-        {i.number}
-      </Link>
+      <span className="inline-flex items-center gap-1.5">
+        <Link
+          to={`${basePath}/${i.id}`}
+          onClick={(e) => e.stopPropagation()}
+          className="rounded-sm font-mono text-[0.8rem] font-semibold whitespace-nowrap outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          {i.number}
+        </Link>
+        <EscalationBadge level={i.escalationLevel} />
+      </span>
     ),
   },
   title: {
@@ -88,24 +92,38 @@ const COLUMNS = {
   },
   sla: {
     head: 'SLA',
-    cell: (i) =>
-      OPEN_SLA.has(i.slaStatus) && i.resolutionDueAt ? (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span
-              tabIndex={0}
-              className="rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <SlaStatusBadge status={i.slaStatus} />
+    cell: (i) => {
+      // the deadline still ticking: response until acknowledged, then resolution
+      const next = nextDeadline(i)
+      return (
+        <span className="grid gap-0.5">
+          {next?.dueAt ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  tabIndex={0}
+                  className="w-fit rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <SlaStatusBadge status={i.slaStatus} />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                {next.kind === 'response' ? 'Response' : 'Resolution'} due{' '}
+                {formatDateTime(next.dueAt)}
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <SlaStatusBadge status={i.slaStatus} />
+          )}
+          {next?.dueAt && (
+            <span className="text-xs text-muted-foreground">
+              {next.kind === 'response' ? 'Response ' : 'Resolution '}
+              <SlaCountdown dueAt={next.dueAt} compact />
             </span>
-          </TooltipTrigger>
-          <TooltipContent>
-            Resolution due {formatDateTime(i.resolutionDueAt)} ({timeUntil(i.resolutionDueAt)})
-          </TooltipContent>
-        </Tooltip>
-      ) : (
-        <SlaStatusBadge status={i.slaStatus} />
-      ),
+          )}
+        </span>
+      )
+    },
   },
 }
 
@@ -156,6 +174,13 @@ export function IncidentTable({ incidents, loading, columns, basePath, rowTag, s
                         c.className,
                         n === 0 && 'pl-5',
                         n === cols.length - 1 && 'pr-5',
+                        // a thin coloured edge for SLA trouble (drawn on the first cell: rows can't have borders)
+                        n === 0 &&
+                          incident.slaStatus === 'BREACHED' &&
+                          'shadow-[inset_3px_0_0_var(--lamp-stop)]',
+                        n === 0 &&
+                          incident.slaStatus === 'AT_RISK' &&
+                          'shadow-[inset_3px_0_0_var(--lamp-caution)]',
                       )}
                     >
                       {c.cell(incident, basePath, tag)}

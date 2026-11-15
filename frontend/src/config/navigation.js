@@ -1,6 +1,7 @@
 // Sidebar items per role. The router builds its routes from this list too.
 // Items marked soon lead to the Coming Soon page.
 import {
+  AlarmClockOff,
   Bell,
   ChartColumn,
   FilePlus,
@@ -43,6 +44,7 @@ export const NAVIGATION = {
     { label: 'Users', path: '/admin/users', icon: Users },
     { label: 'Services & categories', path: '/admin/catalog', icon: Layers },
     { label: 'SLA policies', path: '/admin/sla-policies', icon: Timer },
+    { label: 'SLA violations', path: '/admin/sla', icon: AlarmClockOff },
     { label: 'Assignment', path: '/admin/assignment', icon: Route },
     { label: 'Workload', path: '/admin/workload', icon: Gauge },
     { label: 'Reports', path: '/admin/reports', icon: ChartColumn, soon: true },
