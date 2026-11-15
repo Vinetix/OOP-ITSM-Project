@@ -1,6 +1,6 @@
 # I-ITSM API Contract
 
-Living document, updated every backend phase. Last update: **Phase 5 (notifications and audit trail)**.
+Living document, updated every backend phase. Last update: **Phase 6 (SLA monitor, violations, automatic escalation)**.
 Live, always-current docs: `http://localhost:8080/swagger-ui.html` (raw spec: `/v3/api-docs`).
 
 ## Conventions (apply to every endpoint)
@@ -854,6 +854,75 @@ Errors:
 For system entries: `"actorName": "System"`, `"system": true`, no `actorId` / `actorRole`. Names are stored as they
 were at the time, so renaming a user later doesn't rewrite history.
 
+### SLA monitor, violations and escalation (Phase 6)
+
+A background **SLA monitor** checks every minute all incidents whose SLA clock is running (`CLASSIFIED`,
+`ASSIGNED`, `ACKNOWLEDGED`, `IN_PROGRESS`, `AWAITING_INFO`). Everything it does is done by the **System**: it
+appears in the audit history with actor "System" and sends important notifications (in-app and email).
+
+| What | When | Effect |
+|---|---|---|
+| **SLA warning** | 75% of a target's time used (response only while not acknowledged) | Once per target: audit `SLA_WARNING`; notification `SLA_WARNING` to the assigned technician, or to all admins if unassigned |
+| **SLA breach** | A deadline passes while still open, or a late acknowledge/resolve | Once per target: breach flag set, **violation recorded**, audit `SLA_BREACHED`; notification `SLA_BREACHED` to the assigned technician and all admins |
+| **Escalation** | Only **P1/P2** incidents that are **`ASSIGNED` but not acknowledged**, measured against the response target T | Audit `ESCALATED`; notification `ESCALATED` (see levels) |
+
+| Escalation level | When | Notified |
+|---|---|---|
+| 1 | 1.0 × T (response deadline missed) | Assigned technician ("acknowledge now") |
+| 2 | 1.5 × T | Available, active senior technicians other than the assignee (all admins if there are none) |
+| 3 | 2.0 × T | All admins |
+
+- For a P1 (T = 5 min) that's 5, 7.5 and 10 minutes after the report. For a P2 (T = 15 min) it's 15, 22.5 and 30.
+- Escalation never re-assigns automatically; a senior or the admin takes over with assign or auto-assign.
+- Escalation stops once the incident is acknowledged. The reached level stays on the incident.
+- If the monitor was paused and an incident is already past 2 × T, it jumps straight to the due level, with one
+  event.
+- The reporter is not notified about SLA warnings, breaches or escalations.
+
+**New fields on incidents:**
+- `IncidentResponse` gains `escalationLevel` (0–3, always present) and `escalatedAt` (absent until escalated).
+- `IncidentSummaryResponse` (lists) gains `escalationLevel`.
+- `sla.status`, `sla.responseBreached` and `sla.resolutionBreached` now also become true through the monitor, not
+  only through user actions.
+
+| Method | Path | Roles | Params | Success |
+|---|---|---|---|---|
+| GET | `/api/sla/violations` | ADMIN | `target` (`RESPONSE`/`RESOLUTION`), `priority` (`P1`–`P4`), `incidentNumber` (any case), `page`, `size` (default 20), `sort` (default `detectedAt,desc`) | `200` Page of SlaViolationResponse |
+| POST | `/api/sla/monitor/run` | ADMIN | – | `200` SlaMonitorResult |
+
+**SlaViolationResponse** (priority, service and technician are as they were when the breach was recorded;
+`technicianId` / `technicianName` are absent if unassigned)
+
+```json
+{
+  "id": 1,
+  "incidentId": 8,
+  "incidentNumber": "INC00008",
+  "target": "RESPONSE",
+  "priority": "P1",
+  "targetMinutes": 5,
+  "dueAt": "2026-11-14T10:05:00Z",
+  "detectedAt": "2026-11-14T10:05:30Z",
+  "serviceName": "Customer Database"
+}
+```
+
+**SlaMonitorResult** (`skipped` = changed by a user at the same moment, retried next run)
+
+```json
+{ "ranAt": "2026-11-14T10:06:00Z", "checked": 5, "warnings": 0, "breaches": 1, "escalations": 1, "skipped": 0, "failed": 0 }
+```
+
+**Audit `details` examples:**
+- "Response SLA at risk: 75% of the 5-minute target used"
+- "Response SLA breached: 5-minute target missed"
+- "Escalated to level 2 (senior technicians alerted). Not acknowledged after 7 min (P1 response target 5 min)"
+
+**Settings** (optional, in `application-local.properties`):
+- `app.sla.monitor.enabled=false` stops the automatic runs; `POST /api/sla/monitor/run` still works.
+- `app.sla.monitor.interval-ms` (default 60000) and `app.sla.monitor.initial-delay-ms` (default 30000) control
+  the timing.
+
 ## Demo data
 
 Seeded on first start when the tables are empty.
@@ -880,6 +949,24 @@ auto-assign off while it runs and restores it, so the 8 incidents below always e
 (#1 has 6 entries: reported, classified by System, assigned by Anita Rao, acknowledged, started, work note) and the
 demo users already have notifications (Rahul 11, Divya 10, Kiran 9, Anita 8 of which 2 unread for #4 and #8,
 Sneha 3, Ravi 3, Fatima 1, Arjun 1).
+
+**The SLA monitor starts working on the demo incidents at startup**, so these counts change with time (minutes
+after the backend started, roughly; the monitor runs every minute):
+
+| Minute | What happens |
+|---|---|
+| ~4 | #8 (P1, unassigned): response warning to Anita |
+| 5 | #8: response breach |
+| ~11 | #3 (P2, Ravi, unacknowledged): response warning to Ravi |
+| 15 | #3: response breach + escalation level 1 |
+| 15 | #1 (P1, Fatima): resolution warning |
+| 20 | #1: resolution breach |
+| 22.5 | #3: escalation level 2 to Fatima |
+| 22.5 | #8: resolution warning |
+| 30 | #3: escalation level 3 |
+| 30 | #8: resolution breach |
+
+Reporters (Rahul, Divya, Kiran) never get SLA notifications, so their counts stay as listed above.
 
 **Demo incidents (8)**, all created through the real lifecycle:
 
@@ -910,6 +997,11 @@ Sneha 3, Ravi 3, Fatima 1, Arjun 1).
 | EMPLOYEE | `rahul.verma@itsm.com` (Finance), `divya.nair@itsm.com` (HR), `kiran.patel@itsm.com` (Sales) |
 
 ## Changelog
+
+- **Phase 6:** background SLA monitor (warnings, breaches with violation records), automatic escalation of
+  unacknowledged P1/P2 incidents (levels 1–3), `GET /api/sla/violations`, `POST /api/sla/monitor/run`,
+  `escalationLevel` / `escalatedAt` on incidents, new audit actions and notification types `SLA_WARNING`,
+  `SLA_BREACHED`, `ESCALATED`.
 
 - **Phase 5:** notifications (in-app + email, simulated by default) with `/api/notifications` endpoints; audit
   trail with `GET /api/incidents/{id}/history` and admin `GET /api/audit`. No changes to existing endpoints.
