@@ -25,7 +25,8 @@ public record IncidentSummaryResponse(
         Instant createdAt,
         Instant responseDueAt,
         Instant resolutionDueAt,
-        SlaStatus slaStatus
+        SlaStatus slaStatus,
+        int escalationLevel
 ) {
 
     public static IncidentSummaryResponse from(Incident i, Instant now) {
@@ -36,6 +37,7 @@ public record IncidentSummaryResponse(
                 i.getCreatedAt(),
                 sla == null ? null : sla.getResponseDueAt(),
                 sla == null ? null : sla.getResolutionDueAt(),
-                sla == null ? null : sla.statusAt(now));
+                sla == null ? null : sla.statusAt(now),
+                i.getEscalationLevel());
     }
 }

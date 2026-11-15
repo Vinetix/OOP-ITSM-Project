@@ -9,6 +9,7 @@ import com.itsm.incident.priority.Impact;
 import com.itsm.incident.priority.Priority;
 import com.itsm.incident.priority.PriorityResult;
 import com.itsm.incident.priority.Urgency;
+import com.itsm.incident.sla.SlaTarget;
 import com.itsm.incident.sla.SlaTracking;
 import com.itsm.incident.state.IncidentAction;
 import com.itsm.incident.state.IncidentState;
@@ -27,6 +28,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.ColumnDefault;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -105,6 +107,12 @@ public class Incident extends BaseEntity {
 
     @Embedded
     private SlaTracking sla;
+
+    /** 0 = not escalated; 1 technician reminded; 2 senior technicians alerted; 3 admins alerted. */
+    @ColumnDefault("0")
+    private int escalationLevel;
+
+    private Instant escalatedAt;
 
     @Column(length = 2000)
     private String resolutionSummary;
@@ -210,6 +218,31 @@ public class Incident extends BaseEntity {
         this.closureNote = blankToNull(closureNote);
         this.closedAt = now;
         this.status = next;
+    }
+
+    // ---------------- SLA monitor and escalation (Phase 6) ----------------
+
+    public List<SlaTarget> takeNewSlaWarnings(Instant now) {
+        return sla == null ? List.of() : sla.takeNewWarnings(now);
+    }
+
+    public List<SlaTarget> takeUnrecordedSlaViolations(Instant now) {
+        return sla == null ? List.of() : sla.takeUnrecordedViolations(now);
+    }
+
+    /** Assigned to someone who hasn't acknowledged yet (the only situation that is escalated). */
+    public boolean isAwaitingAcknowledgement() {
+        return status == IncidentStatus.ASSIGNED && sla != null && sla.getRespondedAt() == null;
+    }
+
+    /** Raises the level; never lowers it. Returns true if it changed. */
+    public boolean escalateTo(int level, Instant now) {
+        if (level <= escalationLevel) {
+            return false;
+        }
+        this.escalationLevel = level;
+        this.escalatedAt = now;
+        return true;
     }
 
     /** Throws InvalidStateTransitionException if the action isn't allowed now; changes nothing. */

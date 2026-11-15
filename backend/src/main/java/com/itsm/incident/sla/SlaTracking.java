@@ -6,9 +6,12 @@ import jakarta.persistence.Embeddable;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The SLA clock of ONE incident, stored inside the incidents table (@Embeddable).
@@ -16,6 +19,10 @@ import java.time.Instant;
  * Composition: it has no identity of its own and lives and dies with its incident.
  * It is a snapshot: targets are copied from the SLA policy when the incident is classified,
  * so later policy edits never move the deadlines of incidents that already exist.
+ *
+ * Phase 6: the SLA monitor uses the "warned" and "violation recorded" flags so that each warning and
+ * each violation happens exactly once. @ColumnDefault lets Hibernate add these columns to a table
+ * that already has rows.
  */
 @Getter
 @Embeddable
@@ -49,6 +56,18 @@ public class SlaTracking {
 
     private boolean resolutionBreached;
 
+    @ColumnDefault("false")
+    private boolean responseWarned;
+
+    @ColumnDefault("false")
+    private boolean resolutionWarned;
+
+    @ColumnDefault("false")
+    private boolean responseViolationRecorded;
+
+    @ColumnDefault("false")
+    private boolean resolutionViolationRecorded;
+
     public static SlaTracking start(EffectiveSla sla, Instant startedAt) {
         SlaTracking tracking = new SlaTracking();
         tracking.slaStartedAt = startedAt;
@@ -78,6 +97,66 @@ public class SlaTracking {
     /** Fix rejected: the resolution clock runs again (a breach that already happened stays recorded). */
     public void reopen() {
         resolvedAt = null;
+    }
+
+    // ---------------- SLA monitor (Phase 6) ----------------
+
+    /**
+     * Targets that have just reached AT_RISK (75% of the time used, deadline not yet passed).
+     * Each target is returned at most once.
+     */
+    public List<SlaTarget> takeNewWarnings(Instant now) {
+        List<SlaTarget> due = new ArrayList<>();
+        if (!responseWarned && respondedAt == null && !now.isAfter(responseDueAt)
+                && elapsedFraction(responseDueAt, now) >= AT_RISK_THRESHOLD) {
+            responseWarned = true;
+            due.add(SlaTarget.RESPONSE);
+        }
+        if (!resolutionWarned && resolvedAt == null && !now.isAfter(resolutionDueAt)
+                && elapsedFraction(resolutionDueAt, now) >= AT_RISK_THRESHOLD) {
+            resolutionWarned = true;
+            due.add(SlaTarget.RESOLUTION);
+        }
+        return due;
+    }
+
+    /**
+     * Marks deadlines that have passed while still open as breached, then returns every breach
+     * (found now, or earlier by a late acknowledge/resolve) that has no violation record yet,
+     * and marks them recorded. The caller saves one SlaViolation per returned target.
+     */
+    public List<SlaTarget> takeUnrecordedViolations(Instant now) {
+        if (respondedAt == null && now.isAfter(responseDueAt)) {
+            responseBreached = true;
+        }
+        if (resolvedAt == null && now.isAfter(resolutionDueAt)) {
+            resolutionBreached = true;
+        }
+        List<SlaTarget> unrecorded = new ArrayList<>();
+        if (responseBreached && !responseViolationRecorded) {
+            responseViolationRecorded = true;
+            responseWarned = true; // no late warning after a breach
+            unrecorded.add(SlaTarget.RESPONSE);
+        }
+        if (resolutionBreached && !resolutionViolationRecorded) {
+            resolutionViolationRecorded = true;
+            resolutionWarned = true;
+            unrecorded.add(SlaTarget.RESOLUTION);
+        }
+        return unrecorded;
+    }
+
+    public int targetMinutes(SlaTarget target) {
+        return target == SlaTarget.RESPONSE ? responseTargetMinutes : resolutionTargetMinutes;
+    }
+
+    public Instant dueAt(SlaTarget target) {
+        return target == SlaTarget.RESPONSE ? responseDueAt : resolutionDueAt;
+    }
+
+    /** How far into the response target we are: 1.0 = deadline reached, 2.0 = twice the target. */
+    public double responseElapsedFraction(Instant now) {
+        return elapsedFraction(responseDueAt, now);
     }
 
     public SlaStatus statusAt(Instant now) {

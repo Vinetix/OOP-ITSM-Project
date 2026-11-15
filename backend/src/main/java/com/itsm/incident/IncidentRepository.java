@@ -14,6 +14,17 @@ public interface IncidentRepository extends JpaRepository<Incident, Long>, JpaSp
     /** Technician workload = incidents assigned to them that are still being worked on. */
     long countByAssignedTechnicianIdAndStatusIn(Long technicianId, Collection<IncidentStatus> statuses);
 
+    /** Incidents the SLA monitor must look at: clock running, or a breach without a violation record. */
+    @Query("""
+            select i.id from Incident i
+            where i.sla.slaStartedAt is not null and (
+                  i.status in :clockRunning
+               or (i.sla.responseBreached = true and i.sla.responseViolationRecorded = false)
+               or (i.sla.resolutionBreached = true and i.sla.resolutionViolationRecorded = false))
+            order by i.id
+            """)
+    List<Long> findIdsForSlaCheck(@Param("clockRunning") Collection<IncidentStatus> clockRunning);
+
     /** Counts for ALL technicians in one query (used for workload overview and assignment candidates). */
     @Query("""
             select i.assignedTechnician.id as technicianId, i.status as status, count(i) as total
