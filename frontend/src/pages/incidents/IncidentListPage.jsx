@@ -1,6 +1,6 @@
 // Incident list for every role: employees see what they reported, technicians
-// their assignments, admins everything (the server decides). Search, filters,
-// sort and page all live in the URL, so a search survives refresh and can be shared.
+// their queue, admins everything (the server decides). Status, sort and page
+// live in the URL, so refresh and shared links keep them.
 import { useEffect } from 'react'
 import { FilePlus, Inbox, RefreshCw } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router'
@@ -9,7 +9,6 @@ import { incidentsApi } from '@/api/incidentsApi'
 import { useAuth } from '@/auth/AuthContext'
 import { EmptyState } from '@/components/EmptyState'
 import { ErrorAlert } from '@/components/ErrorAlert'
-import { IncidentFilters } from '@/components/incidents/IncidentFilters'
 import { IncidentTable } from '@/components/incidents/IncidentTable'
 import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/Pagination'
@@ -22,14 +21,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { SORTS } from '@/config/incidents'
+import { SORTS, STATUSES } from '@/config/incidents'
 import { getRoleHome } from '@/config/roles'
 import { useAsync } from '@/hooks/useAsync'
 import { useAutoRefresh } from '@/hooks/useAutoRefresh'
-import { getErrorMessage, getErrorStatus } from '@/lib/errors'
+import { getErrorStatus } from '@/lib/errors'
 import { cn } from '@/lib/utils'
-import { FILTER_KEYS, countActive, parseFilters, toApiParams, toParam } from './incidentFilters'
 
+const ALL = 'ALL'
 const PAGE_SIZES = [10, 20, 50]
 
 const ROLE_VIEWS = {
@@ -97,14 +96,19 @@ const ROLE_VIEWS = {
   },
 }
 
+// "ACKNOWLEDGED,IN_PROGRESS" is fine; anything unknown is dropped
+function cleanStatus(raw) {
+  const parts = (raw ?? '').split(',').filter((s) => STATUSES[s])
+  return parts.join(',')
+}
+
 export default function IncidentListPage() {
   const { user } = useAuth()
   const view = ROLE_VIEWS[user.role]
-  const isAdmin = user.role === 'ADMIN'
   const basePath = `${getRoleHome(user.role)}/incidents`
   const [params, setParams] = useSearchParams()
 
-  const filters = parseFilters(params)
+  const status = cleanStatus(params.get('status'))
   const sort = SORTS.some((s) => s.value === params.get('sort'))
     ? params.get('sort')
     : view.defaultSort
@@ -117,14 +121,14 @@ export default function IncidentListPage() {
       (prev) => {
         const next = new URLSearchParams(prev)
         for (const [key, value] of Object.entries(changes)) {
-          const v = FILTER_KEYS.includes(key) ? toParam(key, value) : value
           const isDefault =
-            v === '' ||
-            (key === 'sort' && v === view.defaultSort) ||
-            (key === 'page' && v === 0) ||
-            (key === 'size' && v === 20)
+            value === '' ||
+            value === ALL ||
+            (key === 'sort' && value === view.defaultSort) ||
+            (key === 'page' && value === 0) ||
+            (key === 'size' && value === 20)
           if (isDefault) next.delete(key)
-          else next.set(key, String(v))
+          else next.set(key, String(value))
         }
         if (!('page' in changes)) next.delete('page')
         return next
@@ -133,17 +137,14 @@ export default function IncidentListPage() {
     )
   }
 
-  function clearAll() {
-    update(Object.fromEntries(FILTER_KEYS.map((k) => [k, ''])))
-  }
-
   const list = useAsync(
-    () => incidentsApi.list({ ...toApiParams(filters), sort, page, size }),
-    [params.toString(), sort, page, size],
+    () => incidentsApi.list({ status: status || undefined, sort, page, size }),
+    [status, sort, page, size],
   )
+
   useAutoRefresh(() => list.reload({ silent: true }))
 
-  // a sort the server doesn't know falls back to the default instead of breaking
+  // if the server ever rejects a sort, fall back to the default instead of breaking
   useEffect(() => {
     if (list.error && getErrorStatus(list.error) === 400 && sort !== view.defaultSort) {
       toast.error('That sort isn’t available, showing the default order')
@@ -152,9 +153,10 @@ export default function IncidentListPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [list.error])
 
-  const filtering = countActive(filters) > 0 || Boolean(filters.q)
+  const statusOptions = Object.entries(STATUSES).filter(([key]) => key !== 'NEW')
+  const combined = status.includes(',') // a quick-filter chip such as "In progress"
+  const filtering = status !== ''
   const incidents = list.data?.content
-  const presetStatus = filters.status.join(',')
 
   return (
     <>
@@ -192,11 +194,11 @@ export default function IncidentListPage() {
             <button
               key={chip.label}
               type="button"
-              aria-pressed={presetStatus === chip.status}
-              onClick={() => update({ status: chip.status ? chip.status.split(',') : [] })}
+              aria-pressed={status === chip.status}
+              onClick={() => update({ status: chip.status })}
               className={cn(
                 'rounded-full border px-3 py-1 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
-                presetStatus === chip.status
+                status === chip.status
                   ? 'border-role bg-role text-primary-foreground'
                   : 'border-border bg-card hover:bg-accent',
               )}
@@ -207,18 +209,30 @@ export default function IncidentListPage() {
         </div>
       )}
 
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <IncidentFilters
-            filters={filters}
-            onChange={update}
-            onClearAll={clearAll}
-            isAdmin={isAdmin}
-            resultCount={list.data?.totalElements}
-          />
-        </div>
+      <div className="mb-4 flex flex-wrap gap-3">
+        <Select value={status || ALL} onValueChange={(v) => update({ status: v })}>
+          <SelectTrigger className="h-9 w-56 bg-popover" aria-label="Filter by status">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>All statuses</SelectItem>
+            {combined && (
+              <SelectItem value={status}>
+                {status
+                  .split(',')
+                  .map((s) => STATUSES[s].label)
+                  .join(' or ')}
+              </SelectItem>
+            )}
+            {statusOptions.map(([key, s]) => (
+              <SelectItem key={key} value={key}>
+                {s.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Select value={sort} onValueChange={(v) => update({ sort: v })}>
-          <SelectTrigger className="h-9 w-56 bg-popover" aria-label="Sort by">
+          <SelectTrigger className="h-9 w-60 bg-popover" aria-label="Sort by">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -229,10 +243,15 @@ export default function IncidentListPage() {
             ))}
           </SelectContent>
         </Select>
+        {filtering && (
+          <Button variant="ghost" className="h-9" onClick={() => update({ status: '' })}>
+            Clear filter
+          </Button>
+        )}
       </div>
 
-      {list.error && !(getErrorStatus(list.error) === 400 && sort !== view.defaultSort) ? (
-        <ErrorAlert error={list.error} title={getErrorMessage(list.error)} onRetry={list.reload} />
+      {list.error && getErrorStatus(list.error) !== 400 ? (
+        <ErrorAlert error={list.error} title="Couldn’t load incidents" onRetry={list.reload} />
       ) : (
         <Card className="gap-0 py-0">
           <IncidentTable
@@ -246,11 +265,12 @@ export default function IncidentListPage() {
             <div className="p-5">
               <EmptyState
                 icon={Inbox}
-                title={filtering ? 'No incidents match these filters' : view.empty}
+                title={filtering ? 'No incidents match this filter' : view.empty}
+                description={filtering ? 'Try another status, or clear the filter.' : undefined}
                 action={
                   filtering ? (
-                    <Button variant="outline" onClick={clearAll}>
-                      Clear filters
+                    <Button variant="outline" onClick={() => update({ status: '' })}>
+                      Clear filter
                     </Button>
                   ) : (
                     user.role === 'EMPLOYEE' && (

@@ -10,7 +10,6 @@ import {
   Gauge,
   Hand,
   Inbox,
-  Link,
   MessageCircleQuestion,
   MessageCircleReply,
   MessageSquare,
@@ -41,7 +40,6 @@ const ICONS = {
   SLA_WARNING: Clock,
   SLA_BREACHED: AlarmClockOff,
   ESCALATED: Siren,
-  DUPLICATE_LINKED: Link,
 }
 
 export const notificationIcon = (type) => ICONS[type] ?? Bell

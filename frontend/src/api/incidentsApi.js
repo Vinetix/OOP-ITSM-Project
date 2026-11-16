@@ -8,22 +8,10 @@ const action = (id, name, body) => axiosClient.post(`/api/incidents/${id}/${name
 export const incidentsApi = {
   report: (body) => axiosClient.post('/api/incidents', body).then(data),
 
-  // every filter is optional and they combine with AND; lists are comma-joined
-  // ('AWAITING_INFO,RESOLVED', 'P1,P2'); empty ones are left out of the URL
-  list: ({ page = 0, size = 20, sort = 'createdAt,desc', ...filters } = {}) =>
+  // status may be one value or several joined by commas: 'AWAITING_INFO,RESOLVED'
+  list: ({ status, page = 0, size = 20, sort = 'createdAt,desc' } = {}) =>
     axiosClient
-      .get('/api/incidents', {
-        params: {
-          ...Object.fromEntries(
-            Object.entries(filters).filter(
-              ([, v]) => v !== undefined && v !== null && v !== '' && v !== false,
-            ),
-          ),
-          page,
-          size,
-          sort,
-        },
-      })
+      .get('/api/incidents', { params: { ...(status ? { status } : {}), page, size, sort } })
       .then(data),
 
   get: (id) => axiosClient.get(`/api/incidents/${id}`).then(data),
