@@ -1,6 +1,6 @@
 # I-ITSM API Contract
 
-Living document, updated every backend phase. Last update: **Phase 6 (SLA monitor, violations, automatic escalation)**.
+Living document, updated every backend phase. Last update: **Phase 7 (search, reports, duplicate detection, category suggestion, historical demo data)**.
 Live, always-current docs: `http://localhost:8080/swagger-ui.html` (raw spec: `/v3/api-docs`).
 
 ## Conventions (apply to every endpoint)
@@ -469,7 +469,7 @@ The calculation is explained in `priorityReason`.
 | Method | Path | Roles | Body | Success |
 |---|---|---|---|---|
 | POST | `/api/incidents` | Any | CreateIncidentRequest | `201` IncidentResponse (status `ASSIGNED` if auto-assigned, otherwise `CLASSIFIED`) |
-| GET | `/api/incidents` *(paged)* | Any | `?status=IN_PROGRESS` or several: `?status=ACKNOWLEDGED,IN_PROGRESS` (optional) | `200` Page of IncidentSummaryResponse |
+| GET | `/api/incidents` *(paged)* | Any | Search filters, all optional (see **Search filters** below) | `200` Page of IncidentSummaryResponse |
 | GET | `/api/incidents/{id}` | Reporter, assigned technician, ADMIN | – | `200` IncidentResponse |
 | PATCH | `/api/incidents/{id}` | Reporter, ADMIN | UpdateIncidentRequest | `200` IncidentResponse |
 | POST | `/api/incidents/{id}/notes` | Reporter, assigned technician, ADMIN | `{ "message": "..." }` | `200` IncidentResponse |
@@ -484,20 +484,42 @@ The calculation is explained in `priorityReason`.
 | POST | `/api/incidents/{id}/verify` | Reporter | `{ "rating": 5, "feedback": "..." }` (body optional) | `200` |
 | POST | `/api/incidents/{id}/reopen` | Reporter | `{ "message": "why it's not fixed" }` | `200` |
 | POST | `/api/incidents/{id}/close` | ADMIN or assigned TECHNICIAN | `{ "closureNote": "..." }` (body optional) | `200` |
+| POST | `/api/incidents/{id}/duplicate-of` | ADMIN or assigned TECHNICIAN | `{ "primaryIncidentId": 1 }` | `200` IncidentResponse (see Duplicates) |
+| DELETE | `/api/incidents/{id}/duplicate-of` | ADMIN or assigned TECHNICIAN | – | `200` IncidentResponse |
+| GET | `/api/incidents/{id}/similar` | ADMIN or assigned TECHNICIAN | – | `200` SimilarIncidentResponse[] |
 
 All lifecycle endpoints return the updated IncidentResponse.
 
 **List visibility:** an EMPLOYEE sees incidents they reported; a TECHNICIAN sees incidents assigned to them; an
 ADMIN sees all.
 
-**Status filter:** one value or several, comma-separated (or as a repeated `status=` parameter). For example,
-`?status=AWAITING_INFO,RESOLVED` returns incidents in either status.
+**Search filters (Phase 7).** All are optional, combine with AND, and always apply on top of the visibility rule
+above:
+
+| Param | Example | Meaning |
+|---|---|---|
+| `status` | `ACKNOWLEDGED,IN_PROGRESS` | Any of these statuses (comma-separated or repeated) |
+| `priority` | `P1,P2` | Any of these priorities |
+| `categoryId` | `4` | Category |
+| `serviceId` | `5` | Service |
+| `technicianId` | `3` | Assigned technician |
+| `reporterId` | `6` | Reporter |
+| `reportedFrom`, `reportedTo` | `2026-11-01` | Report date range (`YYYY-MM-DD`, Asia/Kolkata days, `reportedTo` inclusive) |
+| `slaStatus` | `AT_RISK` | `ON_TRACK`, `AT_RISK`, `BREACHED` or `MET`, the same rule as `sla.status` on the incident |
+| `escalatedOnly` | `true` | Only incidents with `escalationLevel > 0` |
+| `q` | `vpn` or `INC00008` | An incident number (also `inc8`) gives that incident; otherwise case-insensitive text in title or description |
+
+- `slaStatus` follows the incident's own rule: a resolved incident is `BREACHED` only if its *resolution* was
+  late, otherwise `MET`. The SLA report, by contrast, counts any breach.
+- Errors:
+  - unknown enum values or malformed dates give `400 INVALID_PARAMETER`;
+  - `reportedTo` before `reportedFrom` gives `400 INVALID_REQUEST`.
 
 **Sorting:** the default is `createdAt,desc`. Supported sort fields:
 
 | Field | Note |
 |---|---|
-| `createdAt` | |
+| `createdAt` | The report time (same as `sla.startedAt`) |
 | `updatedAt` | |
 | `priority` | `asc` puts P1 first |
 | `status` | |
@@ -506,6 +528,21 @@ ADMIN sees all.
 | `sla.resolutionDueAt` | `asc` puts the most urgent deadline first |
 
 Example: `?sort=sla.resolutionDueAt,asc`. An unknown sort field gives `400`.
+
+**`createdAt` (Phase 7):** in IncidentResponse and IncidentSummaryResponse, `createdAt` is the time the incident
+was **reported**. For normal incidents that's the moment of creation; for the historical demo incidents it's
+their original date.
+
+**Duplicate fields on IncidentResponse (Phase 7):**
+- `duplicateOf` is absent unless this incident is linked to a primary;
+- `duplicates` is always present and lists the incidents linked to this one.
+
+Both use the IncidentRef shape:
+
+```json
+{ "duplicateOf": { "id": 1, "number": "INC00001", "title": "Payment page shows an error at checkout", "status": "IN_PROGRESS", "priority": "P1" },
+  "duplicates": [] }
+```
 
 **CreateIncidentRequest** (`categoryId` optional: if omitted, the service's default category is used; if the service
 has none, you get `422` asking for a category)
@@ -923,6 +960,136 @@ appears in the audit history with actor "System" and sends important notificatio
 - `app.sla.monitor.interval-ms` (default 60000) and `app.sla.monitor.initial-delay-ms` (default 30000) control
   the timing.
 
+### Duplicate detection and category suggestion (Phase 7)
+
+**How similarity works.**
+1. Title and description are normalised: lower case, punctuation removed, filler words ("the", "unable",
+   "issue"…) dropped, simple word endings trimmed ("payments" → "payment").
+2. They are compared with **recent (last 7 days) incidents that aren't CLOSED**:
+
+   `score = 0.6 × Jaccard(title words) + 0.4 × Jaccard(all words) + 0.15 same service + 0.05 same category`
+
+   The bonuses only apply when the texts share something.
+3. Incidents scoring **35 or more** (out of 100) are returned, best first, at most 5.
+
+**Endpoints:**
+
+| Method | Path | Roles | Body | Success |
+|---|---|---|---|---|
+| POST | `/api/intelligence/duplicates/check` | Any | `{ "title": "...", "description": "...", "serviceId": 1 }` (description and serviceId optional) | `200` SimilarIncidentResponse[] |
+| GET | `/api/incidents/{id}/similar` | ADMIN or assigned TECHNICIAN | – | `200` SimilarIncidentResponse[] (excludes the incident itself) |
+| POST | `/api/incidents/{id}/duplicate-of` | ADMIN or assigned TECHNICIAN | `{ "primaryIncidentId": 1 }` | `200` IncidentResponse |
+| DELETE | `/api/incidents/{id}/duplicate-of` | ADMIN or assigned TECHNICIAN | – | `200` IncidentResponse |
+| POST | `/api/intelligence/category-suggestion` | Any | `{ "title": "...", "description": "..." }` | `200` CategorySuggestionResponse[] (best first, max 3; empty if nothing matches) |
+
+**SimilarIncidentResponse.** It deliberately contains no people, because employees see it on the report form.
+`duplicateOfNumber` is present when the candidate is itself a duplicate; link to that primary instead.
+
+```json
+{
+  "incidentId": 1,
+  "number": "INC00001",
+  "title": "Payment page shows an error at checkout",
+  "status": "IN_PROGRESS",
+  "priority": "P1",
+  "serviceName": "Payment Gateway",
+  "reportedAt": "2026-11-15T04:00:00Z",
+  "score": 42,
+  "sharedWords": ["payment", "transaction", "fail", "checkout", "error"],
+  "sameService": true,
+  "sameCategory": true
+}
+```
+
+`sharedWords` are normalised words (e.g. "fail" for "failing"/"failed").
+
+**Linking rules** (each broken rule gives `422 BUSINESS_RULE_VIOLATION` with a clear message):
+- an incident can't be a duplicate of itself;
+- the primary can't itself be a duplicate;
+- an incident that has duplicates can't become one;
+- it can't already be linked to the same primary;
+- a CLOSED incident can't be changed.
+
+Linking:
+- writes audit `DUPLICATE_LINKED` / `DUPLICATE_UNLINKED` on the duplicate;
+- notifies the duplicate's reporter (`DUPLICATE_LINKED`: "linked to INC00001; Fatima Khan is handling it") and,
+  when linking, the primary's technician.
+
+Employees get `403 UNAUTHORIZED_OPERATION` for linking and for `/similar`.
+
+**CategorySuggestionResponse**
+
+```json
+{ "categoryId": 7, "code": "AUTHENTICATION", "name": "Authentication", "matchCount": 4,
+  "matchedKeywords": ["access denied", "log in", "password", "sso"] }
+```
+
+- Keywords are the categories' keywords from the catalog (admin-managed). A keyword matches when all its words
+  appear in the text.
+- On report, the server still uses the category the reporter chose, or the service's default. The suggestion is
+  for the form to pre-select.
+
+### Reports (Phase 7, ADMIN)
+
+All accept optional `from` / `to` (`YYYY-MM-DD`, Asia/Kolkata days, `to` inclusive). Incidents are selected by
+report date and SLA violations by the date they were recorded. With no dates, everything is included.
+
+| Method | Path | Success |
+|---|---|---|
+| GET | `/api/reports/overview` | `200` OverviewReport |
+| GET | `/api/reports/technicians` | `200` TechnicianReportRow[] (every technician, by name) |
+| GET | `/api/reports/services` | `200` ServiceReportRow[] (most incidents first; only services with incidents) |
+| GET | `/api/reports/categories` | `200` CategoryReportRow[] (most incidents first) |
+| GET | `/api/reports/sla` | `200` SlaReport |
+| GET | `/api/reports/trends` | `?days=14` (1–90, default 14): `200` TrendPoint[] (oldest first, every day present) |
+
+Averages are in minutes with one decimal, and are absent when there's nothing to average.
+`to` before `from` gives `400 INVALID_REQUEST`; `days` out of range gives `400 INVALID_REQUEST`.
+
+**OverviewReport**
+
+```json
+{
+  "to": "2026-11-14",
+  "totalIncidents": 24, "openIncidents": 0, "criticalOpenIncidents": 0, "resolvedIncidents": 24,
+  "escalatedOpenIncidents": 0, "slaViolations": 5, "slaCompliancePercent": 79.2,
+  "averageResponseMinutes": 32.0, "averageResolutionMinutes": 317.1, "averageRating": 4.1,
+  "byStatus": { "CLOSED": 24 },
+  "byPriority": { "P1": 1, "P2": 6, "P3": 9, "P4": 8 }
+}
+```
+
+Definitions:
+- **open** = not RESOLVED, VERIFIED or CLOSED;
+- **critical open** = open P1;
+- **resolved** = has a resolution time;
+- **SLA compliance** = incidents with a known outcome (resolved or breached) that had **no breach of either
+  target**.
+
+**TechnicianReportRow**
+
+```json
+{ "technicianId": 4, "fullName": "Sneha Reddy", "senior": false, "available": true, "activeIncidents": 0,
+  "maxActiveIncidents": 5, "resolvedIncidents": 8, "averageResolutionMinutes": 231.4, "slaViolations": 2, "averageRating": 3.9 }
+```
+
+**ServiceReportRow:** `serviceName`, `totalIncidents`, `openIncidents`, `criticalIncidents` (P1+P2),
+`slaViolations`, `averageResolutionMinutes`.
+
+**CategoryReportRow:** `code`, `name`, `totalIncidents`, `openIncidents`, `averageResolutionMinutes`.
+
+**SlaReport**
+
+```json
+{ "compliancePercent": 79.2, "measured": 24, "met": 19, "breached": 5, "responseViolations": 2, "resolutionViolations": 3,
+  "byPriority": [ { "priority": "P1", "measured": 1, "met": 0, "breached": 1, "compliancePercent": 0.0,
+                    "responseViolations": 1, "resolutionViolations": 0 } ] }
+```
+
+`byPriority` always has P1–P4. `compliancePercent` is absent for a priority with nothing measured.
+
+**TrendPoint:** `{ "date": "2026-11-02", "reported": 2, "resolved": 2, "slaViolations": 0 }`
+
 ## Demo data
 
 Seeded on first start when the tables are empty.
@@ -968,6 +1135,19 @@ after the backend started, roughly; the monitor runs every minute):
 
 Reporters (Rahul, Divya, Kiran) never get SLA notifications, so their counts stay as listed above.
 
+**Historical incidents (Phase 7):** after the 8 demo incidents, the seeder adds **24 CLOSED incidents** spread
+over the last 13 days (`INC00009`–`INC00032`, about 2 per day, office hours IST).
+- **How they're made:** they go through the real services with the clock pinned to their original times, so
+  histories, SLA results and violations carry the original dates. No notifications are sent for them.
+- **Spread:** across Corporate Email, VPN, Office Network & Wi-Fi, Cloud File Storage, HR Portal, Employee
+  Laptops & Desktops and SSO. None are on Payment Gateway or Customer Database, so the assignment scores in the
+  test cases are unchanged.
+- **Priorities and SLA:** P1 1, P2 6, P3 9, P4 8. **5 SLA violations:** response on INC00013 and INC00018;
+  resolution on INC00012, INC00022 and INC00029. Compliance 79.2%.
+- **Averages:** response 32.0 min, resolution 317.1 min, rating 4.1.
+- **Resolved per technician:** Sneha 8, Arjun 7, Ravi 6, Fatima 3.
+- **Effect on numbering:** new incidents now start at **INC00033**.
+
 **Demo incidents (8)**, all created through the real lifecycle:
 
 | # | Status | Priority | Title | Reporter | Technician | Notes |
@@ -997,6 +1177,16 @@ Reporters (Rahul, Divya, Kiran) never get SLA notifications, so their counts sta
 | EMPLOYEE | `rahul.verma@itsm.com` (Finance), `divya.nair@itsm.com` (HR), `kiran.patel@itsm.com` (Sales) |
 
 ## Changelog
+
+- **Phase 7:**
+  - search filters on `GET /api/incidents`;
+  - `createdAt` = report time;
+  - duplicate detection (`/api/intelligence/duplicates/check`, `/api/incidents/{id}/similar`), duplicate links
+    (`duplicate-of`, `duplicateOf` / `duplicates` on incidents);
+  - category suggestion;
+  - admin reports (`/api/reports/*`);
+  - audit `DUPLICATE_LINKED` / `DUPLICATE_UNLINKED`, notification `DUPLICATE_LINKED`;
+  - 24 historical demo incidents.
 
 - **Phase 6:** background SLA monitor (warnings, breaches with violation records), automatic escalation of
   unacknowledged P1/P2 incidents (levels 1–3), `GET /api/sla/violations`, `POST /api/sla/monitor/run`,
