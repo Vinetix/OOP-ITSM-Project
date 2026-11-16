@@ -15,6 +15,9 @@ problems, technicians work on them, and admins manage users.
 - **Phase F5:** a notification bell and inbox for every role (polled every 30 s, paused
   while the tab is hidden), an incident History tab from the audit trail, and the admin
   Audit log with filters kept in the URL.
+- **Phase F6:** live SLA countdowns (one shared one-second clock that pauses while the tab
+  is hidden), escalation badges and banners, an SLA panel on every incident, the admin
+  SLA violations page, and SLA cards on the home pages.
 
 ## Run it
 

@@ -8,6 +8,7 @@ import { InfoList } from '@/components/InfoList'
 import { MyWorkloadCard } from '@/components/assignment/AssignmentHomeCards'
 import { AvailabilityCard } from '@/components/AvailabilityCard'
 import { RecentNotifications } from '@/components/notifications/RecentNotifications'
+import { NeedsAttentionCard } from '@/components/incidents/SlaHomeCards'
 import { PageHeader } from '@/components/PageHeader'
 import { SkillChips } from '@/components/SkillChips'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -52,6 +53,7 @@ export default function TechnicianHomePage() {
           rowTag={(i) => (i.status === 'ASSIGNED' ? 'Needs acknowledgement' : null)}
           empty="Nothing is assigned to you right now."
         />
+        <NeedsAttentionCard className="lg:col-span-2" />
         <RecentNotifications className="lg:col-span-2" />
         <MyWorkloadCard />
         <AvailabilityCard />

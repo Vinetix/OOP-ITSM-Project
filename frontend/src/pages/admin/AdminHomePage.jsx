@@ -9,6 +9,7 @@ import { AssignmentCard, TeamWorkloadCard } from '@/components/assignment/Assign
 import { EmptyState } from '@/components/EmptyState'
 import { IncidentCounts } from '@/components/incidents/IncidentCounts'
 import { RecentIncidents } from '@/components/incidents/RecentIncidents'
+import { AdminSlaCards } from '@/components/incidents/SlaHomeCards'
 import { ErrorAlert } from '@/components/ErrorAlert'
 import { Lamp } from '@/components/Lamp'
 import { PageHeader } from '@/components/PageHeader'
@@ -250,6 +251,7 @@ export default function AdminHomePage() {
             { label: 'Resolved', status: 'RESOLVED', tone: 'teal' },
           ]}
         />
+        <AdminSlaCards />
         <RecentIncidents
           title="Latest incidents"
           listPath="/admin/incidents"

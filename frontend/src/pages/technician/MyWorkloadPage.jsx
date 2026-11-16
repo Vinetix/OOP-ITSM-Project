@@ -6,6 +6,7 @@ import { WorkloadBar } from '@/components/assignment/WorkloadBar'
 import { AvailabilityCard } from '@/components/AvailabilityCard'
 import { ErrorAlert } from '@/components/ErrorAlert'
 import { RecentIncidents } from '@/components/incidents/RecentIncidents'
+import { NeedsAttentionCard } from '@/components/incidents/SlaHomeCards'
 import { PageHeader } from '@/components/PageHeader'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -61,6 +62,7 @@ export default function MyWorkloadPage() {
           </Card>
         )}
         <AvailabilityCard onChanged={() => mine.reload({ silent: true })} />
+        <NeedsAttentionCard className="lg:col-span-2" />
         <RecentIncidents
           className="lg:col-span-2"
           title="My active incidents"
