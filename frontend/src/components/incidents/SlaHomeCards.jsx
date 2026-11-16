@@ -38,7 +38,7 @@ function useOpenIncidents(status) {
   return list
 }
 
-function ListCard({ title, description, icon, empty, list, rows, basePath, columns, className }) {
+function ListCard({ title, description, icon, empty, list, rows, basePath, viewAllTo, columns, className }) {
   return (
     <Card className={className}>
       <CardHeader>
@@ -49,7 +49,7 @@ function ListCard({ title, description, icon, empty, list, rows, basePath, colum
         <CardDescription>{description}</CardDescription>
         <CardAction>
           <Button asChild variant="outline" size="sm">
-            <Link to={basePath}>View all</Link>
+            <Link to={viewAllTo ?? basePath}>View all</Link>
           </Button>
         </CardAction>
       </CardHeader>
@@ -162,6 +162,7 @@ export function AdminSlaCards() {
         list={list}
         rows={escalated}
         basePath="/admin/incidents"
+        viewAllTo="/admin/incidents?escalatedOnly=true"
         columns={['number', 'title', 'priority', 'status', 'technician', 'sla']}
       />
     </div>
