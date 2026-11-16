@@ -10,6 +10,7 @@ import {
   Gauge,
   Hand,
   History,
+  Link,
   MessageCircleQuestion,
   MessageCircleReply,
   MessageSquare,
@@ -17,6 +18,7 @@ import {
   RotateCcw,
   Siren,
   Tags,
+  Unlink,
   UserCheck,
   Wrench,
 } from 'lucide-react'
@@ -39,6 +41,8 @@ export const AUDIT_ACTIONS = [
   { value: 'SLA_WARNING', label: 'SLA at risk', icon: Clock },
   { value: 'SLA_BREACHED', label: 'SLA breached', icon: AlarmClockOff },
   { value: 'ESCALATED', label: 'Escalated', icon: Siren },
+  { value: 'DUPLICATE_LINKED', label: 'Marked as duplicate', icon: Link },
+  { value: 'DUPLICATE_UNLINKED', label: 'Duplicate link removed', icon: Unlink },
 ]
 
 export function auditAction(value) {
