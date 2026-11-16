@@ -18,6 +18,7 @@ import { AuthLayout } from '@/layouts/AuthLayout'
 import AdminHomePage from '@/pages/admin/AdminHomePage'
 import AssignmentSettingsPage from '@/pages/admin/AssignmentSettingsPage'
 import AuditLogPage from '@/pages/admin/AuditLogPage'
+import ReportsPage from '@/pages/admin/reports/ReportsPage'
 import WorkloadPage from '@/pages/admin/WorkloadPage'
 import CatalogPage from '@/pages/admin/catalog/CatalogPage'
 import SlaPoliciesPage from '@/pages/admin/sla/SlaPoliciesPage'
@@ -47,6 +48,7 @@ const PAGES = {
   '/admin/users': <UsersPage />,
   '/admin/notifications': <NotificationsPage />,
   '/admin/audit': <AuditLogPage />,
+  '/admin/reports': <ReportsPage />,
   '/admin/sla': <SlaViolationsPage />,
   '/employee/notifications': <NotificationsPage />,
   '/technician/notifications': <NotificationsPage />,

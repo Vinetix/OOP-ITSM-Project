@@ -18,6 +18,9 @@ problems, technicians work on them, and admins manage users.
 - **Phase F6:** live SLA countdowns (one shared one-second clock that pauses while the tab
   is hidden), escalation badges and banners, an SLA panel on every incident, the admin
   SLA violations page, and SLA cards on the home pages.
+- **Phase F7:** search and filters on every incident list (all in the URL), category
+  suggestion and similar-incident warnings on the report form, duplicate links on the
+  incident page, and the admin reports dashboard (Recharts) with CSV export.
 
 ## Run it
 

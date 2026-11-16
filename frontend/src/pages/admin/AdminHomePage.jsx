@@ -9,6 +9,7 @@ import { AssignmentCard, TeamWorkloadCard } from '@/components/assignment/Assign
 import { EmptyState } from '@/components/EmptyState'
 import { IncidentCounts } from '@/components/incidents/IncidentCounts'
 import { RecentIncidents } from '@/components/incidents/RecentIncidents'
+import { ReportsSummaryCard } from '@/components/ReportsSummaryCard'
 import { AdminSlaCards } from '@/components/incidents/SlaHomeCards'
 import { ErrorAlert } from '@/components/ErrorAlert'
 import { Lamp } from '@/components/Lamp'
@@ -64,7 +65,7 @@ const SECTION_DESCRIPTIONS = {
   '/admin/sla-policies': 'Response and resolution targets per priority, with service overrides.',
   '/admin/assignment': 'Which strategy picks a technician, and whether it happens automatically.',
   '/admin/workload': 'Each technician’s active incidents against their limit.',
-  '/admin/reports': 'Volumes, SLA performance and workload.',
+  '/admin/reports': 'Volumes, SLA compliance, trends and technician performance.',
   '/admin/sla': 'Every missed response or resolution deadline.',
   '/admin/audit': 'Every change to every incident, by person or System.',
 }
@@ -259,7 +260,10 @@ export default function AdminHomePage() {
           empty="No incidents have been reported yet."
         />
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-          <AssignmentCard />
+          <div className="grid gap-6">
+            <ReportsSummaryCard />
+            <AssignmentCard />
+          </div>
           <TeamWorkloadCard />
         </div>
         <div className="grid items-start gap-6 lg:grid-cols-2">
