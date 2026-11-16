@@ -1,6 +1,6 @@
 # I-ITSM API Contract
 
-Living document, updated every backend phase. Last update: **Phase 7 (search, reports, duplicate detection, category suggestion, historical demo data)**.
+Living document, updated every backend phase. Last update: **Phase 8 (automated tests; fix: reporters now receive the "received" receipt)**.
 Live, always-current docs: `http://localhost:8080/swagger-ui.html` (raw spec: `/v3/api-docs`).
 
 ## Conventions (apply to every endpoint)
@@ -1177,6 +1177,13 @@ over the last 13 days (`INC00009`–`INC00032`, about 2 per day, office hours IS
 | EMPLOYEE | `rahul.verma@itsm.com` (Finance), `divya.nair@itsm.com` (HR), `kiran.patel@itsm.com` (Sales) |
 
 ## Changelog
+
+- **Phase 8.1:** no API changes. **Fix:** historical demo seeding is now really silent (no notifications), and its
+  SLA violations are recorded at their original dates. **Do a full reset after updating.**
+
+- **Phase 8:** no API changes. **Fix:** the `INCIDENT_REPORTED` receipt ("INC… received") is now actually sent to
+  the reporter. The "nobody is notified about their own action" rule had suppressed it; receipts are now the one
+  exception. Notification counts in this document were already written for the fixed behaviour.
 
 - **Phase 7:**
   - search filters on `GET /api/incidents`;
