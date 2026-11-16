@@ -34,6 +34,7 @@ import { AssignDialog } from './detail/AssignDialog'
 import { AutoAssignDialog } from './detail/AutoAssignDialog'
 import { EditIncidentDialog } from './detail/EditIncidentDialog'
 import { EscalationBanner } from './detail/EscalationBanner'
+import { DuplicateOfBanner, RelatedIncidentsCard } from './detail/RelatedIncidents'
 import { IncidentBanners } from './detail/IncidentBanners'
 import { IncidentHistory } from './detail/IncidentHistory'
 import { DetailsCard, PriorityCard, SlaCard } from './detail/IncidentSideCards'
@@ -138,6 +139,12 @@ export default function IncidentDetailPage() {
   }
 
   // returns true when handled here (toast and reload), false to let the dialog show it
+  // link and unlink replace the incident; a refusal arrives as an error message
+  function applyRelated(updated, message, error) {
+    if (error) return toast.error(error)
+    applyUpdate(updated, message)
+  }
+
   function handleActionError(err) {
     if (!RELOAD_CODES.has(getErrorCode(err))) return false
     toast.error(getErrorMessage(err))
@@ -164,6 +171,7 @@ export default function IncidentDetailPage() {
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="grid min-w-0 gap-6">
+          <DuplicateOfBanner incident={i} user={user} onUpdated={applyRelated} />
           <EscalationBanner incident={i} user={user} onAction={openAction} />
           <IncidentBanners incident={i} user={user} onAction={openAction} />
 
@@ -177,6 +185,8 @@ export default function IncidentDetailPage() {
           <TextCard title="Description">
             <p className="whitespace-pre-wrap">{i.description}</p>
           </TextCard>
+
+          <RelatedIncidentsCard incident={i} user={user} onUpdated={applyUpdate} />
 
           {i.resolutionSummary && (
             <TextCard title="Resolution">

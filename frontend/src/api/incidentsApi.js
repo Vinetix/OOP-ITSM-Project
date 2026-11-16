@@ -33,6 +33,12 @@ export const incidentsApi = {
 
   addNote: (id, message) => action(id, 'notes', { message }),
 
+  // duplicates: candidates (admin or assigned technician), link and unlink
+  similar: (id) => axiosClient.get(`/api/incidents/${id}/similar`).then(data),
+  linkDuplicate: (id, primaryIncidentId) =>
+    axiosClient.post(`/api/incidents/${id}/duplicate-of`, { primaryIncidentId }).then(data),
+  unlinkDuplicate: (id) => axiosClient.delete(`/api/incidents/${id}/duplicate-of`).then(data),
+
   assign: (id, technicianId) => action(id, 'assign', { technicianId }),
   // the active strategy's top candidate (skips the current technician)
   autoAssign: (id) => action(id, 'auto-assign'),

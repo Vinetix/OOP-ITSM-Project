@@ -1,6 +1,6 @@
 // The report form. The estimated priority uses the same formula as the server,
 // but only as a hint: the server's priority is the one the incident gets.
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { categoriesApi, servicesApi } from '@/api/catalogApi'
@@ -21,6 +21,10 @@ import { criticalityOf } from '@/config/catalog'
 import { IMPACTS, URGENCIES } from '@/config/incidents'
 import { useAsync } from '@/hooks/useAsync'
 import { useFormState } from '@/hooks/useFormState'
+import { useAuth } from '@/auth/AuthContext'
+import { SimilarIncidentsBox } from '@/components/incidents/SimilarIncidentsBox'
+import { getRoleHome } from '@/config/roles'
+import { useSmartHelp } from './useSmartHelp'
 import { useNotifications } from '@/notifications/NotificationsContext'
 import { getErrorCode, getErrorMessage } from '@/lib/errors'
 import { estimatePriority } from '@/lib/priority'
@@ -46,13 +50,18 @@ export default function ReportIncidentPage() {
   return <ReportForm services={services.data} categories={categories.data} />
 }
 
+const DEFAULT = 'DEFAULT' // the "Use the service's default" option
+
 function ReportForm({ services, categories }) {
   const navigate = useNavigate()
   const notifications = useNotifications()
+  const { user } = useAuth()
   const [submitting, setSubmitting] = useState(false)
+  // once the person picks a category themselves, suggestions never change it again
+  const [categoryTouched, setCategoryTouched] = useState(false)
   const form = useFormState({
     serviceId: '',
-    categoryId: '',
+    categoryId: DEFAULT, // no categoryId sent: the server uses the service's default
     title: '',
     description: '',
     impact: '',
@@ -67,16 +76,33 @@ function ReportForm({ services, categories }) {
     service &&
     estimatePriority(values.impact, values.urgency, service.criticality, values.affectedUsers)
 
+  const { suggestions, similar } = useSmartHelp(values)
+  const activeIds = new Set(categories.map((c) => String(c.id)))
+  const usable = suggestions.filter((s) => activeIds.has(String(s.categoryId)))
+  const top = usable[0]
+
+  // while the category is untouched, follow the best suggestion (or the service default)
+  useEffect(() => {
+    if (categoryTouched) return
+    setField('categoryId', top ? String(top.categoryId) : DEFAULT)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [top?.categoryId, categoryTouched])
+
   function chooseService(id) {
     setField('serviceId', id)
-    const chosen = services.find((s) => String(s.id) === id)
-    // pre-select the service's default category; with no default the user must pick one
-    setField('categoryId', chosen?.defaultCategory ? String(chosen.defaultCategory.id) : '')
+  }
+
+  function chooseCategory(id) {
+    setCategoryTouched(true)
+    setField('categoryId', id)
   }
 
   async function handleSubmit(event) {
     event.preventDefault()
     const found = validateIncident(values)
+    if (values.categoryId === DEFAULT && service && !defaultCategoryId) {
+      found.categoryId = 'This service has no default category, so please choose one.'
+    }
     if (Object.keys(found).length) return form.showErrors(found)
 
     setSubmitting(true)
@@ -85,7 +111,7 @@ function ReportForm({ services, categories }) {
         title: values.title.trim(),
         description: values.description.trim(),
         serviceId: Number(values.serviceId),
-        categoryId: Number(values.categoryId),
+        categoryId: values.categoryId === DEFAULT ? undefined : Number(values.categoryId),
         impact: values.impact,
         urgency: values.urgency,
         affectedUsers: Number(values.affectedUsers),
@@ -142,25 +168,48 @@ function ReportForm({ services, categories }) {
                   <CriticalityBadge criticality={service.criticality} className="w-fit" />
                 )}
               </div>
-              <SelectField
-                id="categoryId"
-                label="Category"
-                value={values.categoryId}
-                onChange={(v) => setField('categoryId', v)}
-                options={categories.map((c) => ({
-                  value: String(c.id),
-                  label:
-                    String(c.id) === defaultCategoryId ? `${c.name} (service default)` : c.name,
-                }))}
-                placeholder={service ? 'Choose a category' : 'Choose a service first'}
-                disabled={!service}
-                hint={
-                  service && !defaultCategoryId
-                    ? 'This service has no default, so please choose one.'
-                    : undefined
-                }
-                error={errors.categoryId}
-              />
+              <div className="grid gap-2">
+                <SelectField
+                  id="categoryId"
+                  label="Category"
+                  value={values.categoryId}
+                  onChange={chooseCategory}
+                  options={[
+                    {
+                      value: DEFAULT,
+                      label: service?.defaultCategory
+                        ? `Use the service’s default (${service.defaultCategory.name})`
+                        : 'Use the service’s default',
+                    },
+                    ...categories.map((c) => ({ value: String(c.id), label: c.name })),
+                  ]}
+                  hint={
+                    !categoryTouched && top && values.categoryId === String(top.categoryId)
+                      ? `✨ Suggested from: ${top.matchedKeywords.join(', ')}`
+                      : service && !defaultCategoryId && values.categoryId === DEFAULT
+                        ? 'This service has no default, so please choose one.'
+                        : undefined
+                  }
+                  error={errors.categoryId}
+                />
+                {usable.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                    <span className="text-muted-foreground">Suggestions:</span>
+                    {usable.map((s) => (
+                      <button
+                        key={s.categoryId}
+                        type="button"
+                        aria-pressed={values.categoryId === String(s.categoryId)}
+                        onClick={() => chooseCategory(String(s.categoryId))}
+                        title={`Matched: ${s.matchedKeywords.join(', ')}`}
+                        className="rounded-full border border-border bg-popover px-2 py-0.5 font-medium outline-none hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50 aria-pressed:border-role aria-pressed:bg-role-soft"
+                      >
+                        {s.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             <FormField
@@ -211,6 +260,11 @@ function ReportForm({ services, categories }) {
               value={values.affectedUsers}
               onChange={(e) => setField('affectedUsers', e.target.value)}
               error={errors.affectedUsers}
+            />
+
+            <SimilarIncidentsBox
+              items={similar}
+              linkTo={user.role === 'EMPLOYEE' ? null : `${getRoleHome(user.role)}/incidents`}
             />
 
             <div className="flex justify-end">
