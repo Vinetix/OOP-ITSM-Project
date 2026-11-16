@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 
@@ -13,6 +14,19 @@ public interface IncidentRepository extends JpaRepository<Incident, Long>, JpaSp
 
     /** Technician workload = incidents assigned to them that are still being worked on. */
     long countByAssignedTechnicianIdAndStatusIn(Long technicianId, Collection<IncidentStatus> statuses);
+
+    List<Incident> findByDuplicateOfIdOrderByIdAsc(Long primaryId);
+
+    boolean existsByDuplicateOfId(Long primaryId);
+
+    /** Candidates for duplicate detection: recent incidents that aren't closed. */
+    @Query("""
+            select i from Incident i
+            where i.status <> com.itsm.incident.state.IncidentStatus.CLOSED
+              and i.sla.slaStartedAt >= :since
+            order by i.sla.slaStartedAt desc
+            """)
+    List<Incident> findSimilarityCandidates(@Param("since") Instant since);
 
     /** Incidents the SLA monitor must look at: clock running, or a breach without a violation record. */
     @Query("""

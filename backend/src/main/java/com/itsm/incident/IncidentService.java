@@ -40,6 +40,14 @@ import com.itsm.user.TechnicianRepository;
 import com.itsm.user.User;
 import com.itsm.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import com.itsm.common.exception.InvalidRequestException;
+import com.itsm.incident.event.IncidentDuplicateLinkedEvent;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import java.time.ZoneId;
+import java.util.Objects;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
@@ -49,7 +57,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Collection;
 import java.util.List;
 import java.util.function.BiConsumer;
 
@@ -79,6 +86,9 @@ public class IncidentService {
     private final PriorityStrategy priorityStrategy;
     private final TechnicianWorkloadService workloadService;
     private final AssignmentService assignmentService;
+
+    @Value("${app.reports.zone:Asia/Kolkata}")
+    private String reportsZoneName;
     private final IncidentAccessPolicy accessPolicy;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
@@ -125,15 +135,79 @@ public class IncidentService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<IncidentSummaryResponse> list(Collection<IncidentStatus> statuses, Pageable pageable,
+    public PageResponse<IncidentSummaryResponse> list(IncidentSearchCriteria criteria, Pageable pageable,
                                                       UserPrincipal actor) {
-        Specification<Incident> spec = IncidentSpecifications.visibleTo(actor);
-        if (statuses != null && !statuses.isEmpty()) {
-            spec = spec.and(IncidentSpecifications.hasStatusIn(statuses));
-        }
         Instant now = clock.instant();
-        return PageResponse.from(incidentRepository.findAll(spec, pageable)
+        Instant from = criteria.reportedFrom() == null ? null : criteria.reportedFrom().atStartOfDay(reportsZone()).toInstant();
+        Instant before = criteria.reportedTo() == null ? null
+                : criteria.reportedTo().plusDays(1).atStartOfDay(reportsZone()).toInstant();
+        if (from != null && before != null && !before.isAfter(from)) {
+            throw new InvalidRequestException("'reportedTo' must not be before 'reportedFrom'");
+        }
+        Specification<Incident> spec = Stream.of(
+                        IncidentSpecifications.visibleTo(actor),
+                        IncidentSpecifications.hasStatusIn(criteria.statuses()),
+                        IncidentSpecifications.hasPriorityIn(criteria.priorities()),
+                        IncidentSpecifications.inCategory(criteria.categoryId()),
+                        IncidentSpecifications.onService(criteria.serviceId()),
+                        IncidentSpecifications.assignedTo(criteria.technicianId()),
+                        IncidentSpecifications.reportedBy(criteria.reporterId()),
+                        IncidentSpecifications.reportedFrom(from),
+                        IncidentSpecifications.reportedBefore(before),
+                        IncidentSpecifications.hasSlaStatus(criteria.slaStatus(), now),
+                        IncidentSpecifications.escalatedOnly(criteria.escalatedOnly()),
+                        IncidentSpecifications.matchesText(criteria.text()))
+                .filter(Objects::nonNull)
+                .reduce(Specification::and)
+                .orElseThrow();
+        return PageResponse.from(incidentRepository.findAll(spec, byReportedTime(pageable))
                 .map(incident -> IncidentSummaryResponse.from(incident, now)));
+    }
+
+    /** "createdAt" in a sort means the report time (see Incident.getReportedAt()). */
+    private static Pageable byReportedTime(Pageable pageable) {
+        if (pageable.getSort().isUnsorted()) {
+            return pageable;
+        }
+        Sort sort = Sort.by(pageable.getSort().stream()
+                .map(order -> "createdAt".equals(order.getProperty())
+                        ? new Sort.Order(order.getDirection(), "sla.slaStartedAt")
+                        : order)
+                .toList());
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+    }
+
+    private ZoneId reportsZone() {
+        return ZoneId.of(reportsZoneName);
+    }
+
+    // =============== duplicates (Phase 7) ===============
+
+    /** Marks incident {id} as a duplicate of {primaryId}. Admin or the incident's assigned technician. */
+    public IncidentResponse linkDuplicate(Long id, Long primaryId, UserPrincipal actor) {
+        Incident incident = loadForDuplicates(id, actor);
+        Incident primary = incidentRepository.findById(primaryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Incident", primaryId));
+        incident.markAsDuplicateOf(primary, incidentRepository.existsByDuplicateOfId(incident.getId()));
+        Instant now = clock.instant();
+        publish(new IncidentDuplicateLinkedEvent(incident.getId(), actor.getId(), now, primary.getId(), primary.getNumber(), true));
+        return toResponse(incident, actor, now);
+    }
+
+    public IncidentResponse unlinkDuplicate(Long id, UserPrincipal actor) {
+        Incident incident = loadForDuplicates(id, actor);
+        Incident primary = incident.unlinkDuplicate();
+        Instant now = clock.instant();
+        publish(new IncidentDuplicateLinkedEvent(incident.getId(), actor.getId(), now, primary.getId(), primary.getNumber(), false));
+        return toResponse(incident, actor, now);
+    }
+
+    private Incident loadForDuplicates(Long id, UserPrincipal actor) {
+        Incident incident = loadVisible(id, actor);
+        if (!accessPolicy.canManageDuplicates(incident, actor)) {
+            throw new UnauthorizedOperationException("Only an admin or the assigned technician can link duplicates");
+        }
+        return incident;
     }
 
     // =============== update details (recalculates priority + SLA) ===============
@@ -344,7 +418,9 @@ public class IncidentService {
     private IncidentResponse toResponse(Incident incident, UserPrincipal actor, Instant now) {
         boolean canEdit = accessPolicy.canEditDetails(incident, actor) && incident.state().isEditable();
         boolean canAddNote = accessPolicy.canAddNote(incident, actor) && incident.state().acceptsNotes();
-        return IncidentResponse.from(incident, accessPolicy.availableActions(incident, actor), canEdit, canAddNote, now);
+        List<Incident> duplicates = incidentRepository.findByDuplicateOfIdOrderByIdAsc(incident.getId());
+        return IncidentResponse.from(incident, duplicates, accessPolicy.availableActions(incident, actor),
+                canEdit, canAddNote, now);
     }
 
     private static String preview(String text) {

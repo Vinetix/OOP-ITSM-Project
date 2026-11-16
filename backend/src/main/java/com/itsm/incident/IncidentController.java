@@ -17,6 +17,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.itsm.incident.dto.LinkDuplicateRequest;
+import com.itsm.incident.priority.Priority;
+import com.itsm.incident.sla.SlaStatus;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import java.time.LocalDate;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -60,15 +66,42 @@ public class IncidentController {
     }
 
     @GetMapping
-    @Operation(summary = "List incidents visible to me (employee: reported, technician: assigned, admin: all). "
-            + "status accepts one or more values: ?status=ACKNOWLEDGED,IN_PROGRESS. "
-            + "Sort by createdAt, updatedAt, priority, status, title, sla.responseDueAt or sla.resolutionDueAt.")
+    @Operation(summary = "List and search incidents visible to me (employee: reported, technician: assigned, admin: all). "
+            + "All filters are optional and combine with AND. status and priority accept several values "
+            + "(?status=ACKNOWLEDGED,IN_PROGRESS). Dates are YYYY-MM-DD (report date, 'to' inclusive). "
+            + "q matches the incident number exactly or text in the title/description. "
+            + "Sort by createdAt (report time), updatedAt, priority, status, title, sla.responseDueAt or sla.resolutionDueAt.")
     public PageResponse<IncidentSummaryResponse> list(
             @AuthenticationPrincipal UserPrincipal me,
             @RequestParam(name = "status", required = false) List<IncidentStatus> statuses,
+            @RequestParam(name = "priority", required = false) List<Priority> priorities,
+            @RequestParam(name = "categoryId", required = false) Long categoryId,
+            @RequestParam(name = "serviceId", required = false) Long serviceId,
+            @RequestParam(name = "technicianId", required = false) Long technicianId,
+            @RequestParam(name = "reporterId", required = false) Long reporterId,
+            @RequestParam(name = "reportedFrom", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate reportedFrom,
+            @RequestParam(name = "reportedTo", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate reportedTo,
+            @RequestParam(name = "slaStatus", required = false) SlaStatus slaStatus,
+            @RequestParam(name = "escalatedOnly", required = false) Boolean escalatedOnly,
+            @RequestParam(name = "q", required = false) String text,
             @ParameterObject @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable) {
-        return incidentService.list(statuses, pageable, me);
+        IncidentSearchCriteria criteria = new IncidentSearchCriteria(statuses, priorities, categoryId, serviceId,
+                technicianId, reporterId, reportedFrom, reportedTo, slaStatus, escalatedOnly, text);
+        return incidentService.list(criteria, pageable, me);
+    }
+
+    @PostMapping("/{id}/duplicate-of")
+    @Operation(summary = "ADMIN or assigned technician: mark this incident as a duplicate of another (primary) incident")
+    public IncidentResponse linkDuplicate(@AuthenticationPrincipal UserPrincipal me, @PathVariable("id") Long id,
+                                          @Valid @RequestBody LinkDuplicateRequest request) {
+        return incidentService.linkDuplicate(id, request.primaryIncidentId(), me);
+    }
+
+    @DeleteMapping("/{id}/duplicate-of")
+    @Operation(summary = "ADMIN or assigned technician: remove the duplicate link")
+    public IncidentResponse unlinkDuplicate(@AuthenticationPrincipal UserPrincipal me, @PathVariable("id") Long id) {
+        return incidentService.unlinkDuplicate(id, me);
     }
 
     @GetMapping("/{id}")

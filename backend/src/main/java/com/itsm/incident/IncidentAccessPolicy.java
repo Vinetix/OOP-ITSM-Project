@@ -30,6 +30,11 @@ public class IncidentAccessPolicy {
         };
     }
 
+    /** Linking duplicates and viewing similar incidents: the people who handle the incident. */
+    public boolean canManageDuplicates(Incident incident, UserPrincipal user) {
+        return isAdmin(user) || incident.isAssignedTo(user.getId());
+    }
+
     public boolean canEditDetails(Incident incident, UserPrincipal user) {
         return isAdmin(user) || incident.isReportedBy(user.getId());
     }

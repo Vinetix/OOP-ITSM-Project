@@ -56,6 +56,11 @@ public class SlaTracking {
 
     private boolean resolutionBreached;
 
+    /** When 75% of each target's time is used (AT_RISK), stored so searches can filter on it. */
+    private Instant responseAtRiskAt;
+
+    private Instant resolutionAtRiskAt;
+
     @ColumnDefault("false")
     private boolean responseWarned;
 
@@ -180,6 +185,8 @@ public class SlaTracking {
         this.resolutionTargetMinutes = sla.resolutionMinutes();
         this.responseDueAt = slaStartedAt.plus(Duration.ofMinutes(responseTargetMinutes));
         this.resolutionDueAt = slaStartedAt.plus(Duration.ofMinutes(resolutionTargetMinutes));
+        this.responseAtRiskAt = slaStartedAt.plusSeconds(Math.round(responseTargetMinutes * 60 * AT_RISK_THRESHOLD));
+        this.resolutionAtRiskAt = slaStartedAt.plusSeconds(Math.round(resolutionTargetMinutes * 60 * AT_RISK_THRESHOLD));
         if (respondedAt != null) {
             this.responseBreached = respondedAt.isAfter(responseDueAt);
         }

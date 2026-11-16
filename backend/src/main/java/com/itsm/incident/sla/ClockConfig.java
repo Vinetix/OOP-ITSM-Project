@@ -7,13 +7,14 @@ import java.time.Clock;
 
 /**
  * All "what time is it?" questions go through this Clock bean instead of Instant.now().
- * Tests can replace it with a fixed clock to check SLA deadlines and breaches deterministically.
+ * Tests can replace it with a fixed clock; the demo seeder uses AdjustableClock.runAt() to create
+ * historical data (see AdjustableClock).
  */
 @Configuration
 public class ClockConfig {
 
     @Bean
-    public Clock clock() {
-        return Clock.systemUTC();
+    public AdjustableClock clock() {
+        return new AdjustableClock(Clock.systemUTC());
     }
 }

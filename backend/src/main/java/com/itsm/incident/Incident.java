@@ -114,6 +114,11 @@ public class Incident extends BaseEntity {
 
     private Instant escalatedAt;
 
+    /** Set when this incident reports the same problem as another one (the primary incident). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "duplicate_of_id")
+    private Incident duplicateOf;
+
     @Column(length = 2000)
     private String resolutionSummary;
 
@@ -233,6 +238,50 @@ public class Incident extends BaseEntity {
     /** Assigned to someone who hasn't acknowledged yet (the only situation that is escalated). */
     public boolean isAwaitingAcknowledgement() {
         return status == IncidentStatus.ASSIGNED && sla != null && sla.getRespondedAt() == null;
+    }
+
+    /**
+     * When the incident was reported: the SLA start (set from the application clock at report time).
+     * Lists and reports use this rather than the database insert time.
+     */
+    public Instant getReportedAt() {
+        return sla != null && sla.getSlaStartedAt() != null ? sla.getSlaStartedAt() : getCreatedAt();
+    }
+
+    // ---------------- duplicates (Phase 7) ----------------
+
+    /**
+     * Links this incident to the primary incident it duplicates. Links are one level deep: the primary
+     * can't itself be a duplicate, and an incident that already has duplicates can't become one.
+     */
+    public void markAsDuplicateOf(Incident primary, boolean hasOwnDuplicates) {
+        if (status == IncidentStatus.CLOSED) {
+            throw new BusinessRuleViolationException(getNumber() + " is closed and can't be changed");
+        }
+        if (primary.getId().equals(getId())) {
+            throw new BusinessRuleViolationException("An incident can't be a duplicate of itself");
+        }
+        if (primary.getDuplicateOf() != null) {
+            throw new BusinessRuleViolationException(primary.getNumber() + " is itself a duplicate of "
+                    + primary.getDuplicateOf().getNumber() + "; link to " + primary.getDuplicateOf().getNumber() + " instead");
+        }
+        if (hasOwnDuplicates) {
+            throw new BusinessRuleViolationException(getNumber() + " has duplicates of its own, so it can't become a duplicate");
+        }
+        if (duplicateOf != null && duplicateOf.getId().equals(primary.getId())) {
+            throw new BusinessRuleViolationException(getNumber() + " is already linked to " + primary.getNumber());
+        }
+        this.duplicateOf = primary;
+    }
+
+    /** Returns the primary it was linked to. */
+    public Incident unlinkDuplicate() {
+        if (duplicateOf == null) {
+            throw new BusinessRuleViolationException(getNumber() + " is not linked as a duplicate");
+        }
+        Incident primary = duplicateOf;
+        this.duplicateOf = null;
+        return primary;
     }
 
     /** Raises the level; never lowers it. Returns true if it changed. */

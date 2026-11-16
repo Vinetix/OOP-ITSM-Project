@@ -34,7 +34,7 @@ public record IncidentSummaryResponse(
         return new IncidentSummaryResponse(i.getId(), i.getNumber(), i.getTitle(), i.getStatus(), i.getPriority(),
                 CategorySummary.from(i.getCategory()), ServiceSummary.from(i.getService()),
                 PersonRef.from(i.getReporter()), PersonRef.from(i.getAssignedTechnician()),
-                i.getCreatedAt(),
+                i.getReportedAt(),
                 sla == null ? null : sla.getResponseDueAt(),
                 sla == null ? null : sla.getResolutionDueAt(),
                 sla == null ? null : sla.statusAt(now),

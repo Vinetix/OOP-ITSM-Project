@@ -39,6 +39,8 @@ public record IncidentResponse(
         SlaView sla,
         int escalationLevel,
         Instant escalatedAt,
+        IncidentRef duplicateOf,
+        List<IncidentRef> duplicates,
         String resolutionSummary,
         String rootCause,
         Integer feedbackRating,
@@ -54,7 +56,7 @@ public record IncidentResponse(
         boolean canAddNote
 ) {
 
-    public static IncidentResponse from(Incident i, Set<IncidentAction> allowedActions,
+    public static IncidentResponse from(Incident i, List<Incident> duplicates, Set<IncidentAction> allowedActions,
                                         boolean canEdit, boolean canAddNote, Instant now) {
         return new IncidentResponse(
                 i.getId(), i.getNumber(), i.getTitle(), i.getDescription(), i.getStatus(),
@@ -64,10 +66,11 @@ public record IncidentResponse(
                 PersonRef.from(i.getReporter()), PersonRef.from(i.getAssignedTechnician()), i.getAssignedAt(),
                 SlaView.from(i.getSla(), now),
                 i.getEscalationLevel(), i.getEscalatedAt(),
+                IncidentRef.from(i.getDuplicateOf()), duplicates.stream().map(IncidentRef::from).toList(),
                 i.getResolutionSummary(), i.getRootCause(),
                 i.getFeedbackRating(), i.getFeedbackComment(),
                 i.getVerifiedAt(), i.getClosedAt(), i.getClosureNote(),
-                i.getCreatedAt(), i.getUpdatedAt(),
+                i.getReportedAt(), i.getUpdatedAt(),
                 i.getNotes().stream().map(NoteResponse::from).toList(),
                 allowedActions, canEdit, canAddNote);
     }
