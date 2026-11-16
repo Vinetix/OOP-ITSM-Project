@@ -1,10 +1,12 @@
 package com.itsm.notification;
 
 import com.itsm.incident.Incident;
+import com.itsm.incident.IncidentRepository;
 import com.itsm.incident.NoteType;
 import com.itsm.incident.event.IncidentAssignedEvent;
 import com.itsm.incident.event.IncidentCreatedEvent;
 import com.itsm.incident.event.IncidentDetailsUpdatedEvent;
+import com.itsm.incident.event.IncidentDuplicateLinkedEvent;
 import com.itsm.incident.event.IncidentEscalatedEvent;
 import com.itsm.incident.event.IncidentEvent;
 import com.itsm.incident.event.IncidentNoteAddedEvent;
@@ -35,6 +37,7 @@ import java.util.List;
 public class IncidentNotificationRules {
 
     private final UserRepository userRepository;
+    private final IncidentRepository incidentRepository;
 
     public List<NotificationMessage> messagesFor(IncidentEvent event, Incident incident) {
         Messages out = new Messages(event.actorId(), incident);
@@ -58,6 +61,7 @@ public class IncidentNotificationRules {
                             incident.getReporter().getFullName() + " added information to \"" + incident.getTitle() + "\".", false);
                 }
             }
+            case IncidentDuplicateLinkedEvent e -> duplicateLinked(out, e, incident);
             case IncidentSlaWarningEvent e -> slaWarning(out, e, incident);
             case IncidentSlaBreachedEvent e -> slaBreached(out, e, incident);
             case IncidentEscalatedEvent e -> escalated(out, e, incident);
@@ -119,6 +123,28 @@ public class IncidentNotificationRules {
                     details + "The reporter says the problem isn't fixed.", true);
             case CLOSE -> out.add(reporter, NotificationType.INCIDENT_CLOSED, number + " closed",
                     "\"" + incident.getTitle() + "\" is now closed. Thank you for reporting it.", false);
+        }
+    }
+
+    /** Linked: the duplicate's reporter and the primary's technician. Unlinked: the reporter. */
+    private void duplicateLinked(Messages out, IncidentDuplicateLinkedEvent event, Incident incident) {
+        Incident primary = incidentRepository.findById(event.primaryIncidentId()).orElse(null);
+        if (!event.linked()) {
+            out.add(incident.getReporter(), NotificationType.DUPLICATE_LINKED, incident.getNumber() + " is handled on its own again",
+                    "It is no longer treated as a duplicate of " + event.primaryNumber() + ".", false);
+            return;
+        }
+        String handler = primary == null || primary.getAssignedTechnician() == null
+                ? "it is waiting for a technician" : primary.getAssignedTechnician().getFullName() + " is handling it";
+        out.add(incident.getReporter(), NotificationType.DUPLICATE_LINKED,
+                incident.getNumber() + " linked to " + event.primaryNumber(),
+                "Your report \"" + incident.getTitle() + "\" describes the same problem as " + event.primaryNumber()
+                        + "; " + handler + ". You'll be kept informed.", false);
+        if (primary != null) {
+            out.add(primary.getAssignedTechnician(), NotificationType.DUPLICATE_LINKED,
+                    incident.getNumber() + " is a duplicate of your " + event.primaryNumber(),
+                    "\"" + incident.getTitle() + "\" was linked to " + event.primaryNumber()
+                            + ". The same fix should help this reporter too.", false);
         }
     }
 

@@ -24,8 +24,25 @@ public class NotificationService {
     private final NotificationChannelFactory channelFactory;
     private final Clock clock;
 
+    /** Set while historical demo data is created, so old events don't flood today's inboxes. */
+    private static final ThreadLocal<Boolean> SILENT = ThreadLocal.withInitial(() -> false);
+
+    /** Runs the action without sending any notifications from THIS thread (audit is unaffected). */
+    public void withoutNotifications(Runnable action) {
+        boolean previous = SILENT.get();
+        SILENT.set(true);
+        try {
+            action.run();
+        } finally {
+            SILENT.set(previous);
+        }
+    }
+
     /** Delivers through every channel chosen for the message; one channel failing doesn't stop the others. */
     public void send(NotificationMessage message) {
+        if (SILENT.get()) {
+            return;
+        }
         for (NotificationChannel channel : channelFactory.channelsFor(message)) {
             try {
                 channel.deliver(message);

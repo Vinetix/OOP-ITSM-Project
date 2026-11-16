@@ -48,6 +48,7 @@ public class IncidentDemoDataSeeder implements CommandLineRunner {
     private final ITServiceRepository serviceRepository;
     private final CategoryRepository categoryRepository;
     private final AssignmentSettingsService assignmentSettings;
+    private final HistoricalDemoDataSeeder historicalSeeder;
 
     @Override
     public void run(String... args) {
@@ -65,6 +66,7 @@ public class IncidentDemoDataSeeder implements CommandLineRunner {
             assignmentSettings.changeAutoAssignOnReport(false);
             seed();
             log.info("Seeded {} demo incidents across the lifecycle", incidentRepository.count());
+            historicalSeeder.seed();
         } catch (RuntimeException e) {
             // Demo data must never stop the application from starting.
             log.warn("Demo incident seeding stopped early after {} incidents: {}",

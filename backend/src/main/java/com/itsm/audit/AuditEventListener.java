@@ -6,6 +6,7 @@ import com.itsm.incident.NoteType;
 import com.itsm.incident.sla.EscalationPolicy;
 import com.itsm.incident.event.IncidentCreatedEvent;
 import com.itsm.incident.event.IncidentDetailsUpdatedEvent;
+import com.itsm.incident.event.IncidentDuplicateLinkedEvent;
 import com.itsm.incident.event.IncidentEscalatedEvent;
 import com.itsm.incident.event.IncidentEvent;
 import com.itsm.incident.event.IncidentNoteAddedEvent;
@@ -57,6 +58,9 @@ public class AuditEventListener {
                     label(e.target().name()) + " SLA at risk: 75% of the " + e.targetMinutes() + "-minute target used");
             case IncidentSlaBreachedEvent e -> record(e, AuditAction.SLA_BREACHED, null, null,
                     label(e.target().name()) + " SLA breached: " + e.targetMinutes() + "-minute target missed");
+            case IncidentDuplicateLinkedEvent e -> record(e,
+                    e.linked() ? AuditAction.DUPLICATE_LINKED : AuditAction.DUPLICATE_UNLINKED, null, null,
+                    (e.linked() ? "Marked as a duplicate of " : "No longer a duplicate of ") + e.primaryNumber());
             case IncidentEscalatedEvent e -> record(e, AuditAction.ESCALATED, null, null,
                     "Escalated to level " + e.level() + " (" + EscalationPolicy.describe(e.level()) + "). " + e.reason());
             default -> { /* not audited (see class comment) */ }

@@ -19,5 +19,6 @@ public enum NotificationType {
     COMMENT_ADDED,
     SLA_WARNING,
     SLA_BREACHED,
-    ESCALATED
+    ESCALATED,
+    DUPLICATE_LINKED
 }

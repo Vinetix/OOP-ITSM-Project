@@ -23,7 +23,9 @@ public enum AuditAction {
     NOTE_ADDED,
     SLA_WARNING,
     SLA_BREACHED,
-    ESCALATED;
+    ESCALATED,
+    DUPLICATE_LINKED,
+    DUPLICATE_UNLINKED;
 
     /** Explicit mapping: adding a lifecycle action without an audit action is a compile error. */
     public static AuditAction of(IncidentAction action) {
