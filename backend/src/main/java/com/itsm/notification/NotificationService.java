@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
@@ -27,7 +28,15 @@ public class NotificationService {
     /** Set while historical demo data is created, so old events don't flood today's inboxes. */
     private static final ThreadLocal<Boolean> SILENT = ThreadLocal.withInitial(() -> false);
 
-    /** Runs the action without sending any notifications from THIS thread (audit is unaffected). */
+    /**
+     * Runs the action without sending any notifications from THIS thread (audit is unaffected).
+     *
+     * NOT_SUPPORTED: this must not open a transaction around the action. Otherwise every service call
+     * inside would join it, nothing would commit until the very end, and the after-commit notification
+     * listeners would fire only after the silent switch is already off (and the SLA checks inside would
+     * not see the uncommitted changes). Each service call inside commits on its own, within the window.
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void withoutNotifications(Runnable action) {
         boolean previous = SILENT.get();
         SILENT.set(true);

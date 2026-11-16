@@ -42,7 +42,8 @@ public class IncidentNotificationRules {
     public List<NotificationMessage> messagesFor(IncidentEvent event, Incident incident) {
         Messages out = new Messages(event.actorId(), incident);
         switch (event) {
-            case IncidentCreatedEvent e -> out.add(incident.getReporter(), NotificationType.INCIDENT_REPORTED,
+            // The one deliberate exception to "never notify the actor": a receipt for your own report.
+            case IncidentCreatedEvent e -> out.addReceipt(incident.getReporter(), NotificationType.INCIDENT_REPORTED,
                     incident.getNumber() + " received",
                     "We logged \"" + incident.getTitle() + "\" with priority " + incident.getPriority()
                             + ". You'll be notified as it progresses.", false);
@@ -239,7 +240,15 @@ public class IncidentNotificationRules {
         }
 
         void add(User recipient, NotificationType type, String title, String body, boolean important) {
-            if (recipient == null || !recipient.isActive() || recipient.getId().equals(actorId)) {
+            if (recipient != null && recipient.getId().equals(actorId)) {
+                return; // nobody is notified about their own action...
+            }
+            addReceipt(recipient, type, title, body, important);
+        }
+
+        /** ...except a receipt, which confirms the actor's own action (e.g. "INC00009 received"). */
+        void addReceipt(User recipient, NotificationType type, String title, String body, boolean important) {
+            if (recipient == null || !recipient.isActive()) {
                 return;
             }
             list.add(new NotificationMessage(recipient, type, title, body, incident.getId(), incident.getNumber(), important));
