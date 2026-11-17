@@ -7,6 +7,7 @@ import com.itsm.catalog.ITServiceRepository;
 import com.itsm.incident.IncidentRepository;
 import com.itsm.incident.IncidentService;
 import com.itsm.incident.assignment.AssignmentSettingsService;
+import com.itsm.notification.email.AsyncEmailSender;
 import com.itsm.incident.dto.CreateIncidentRequest;
 import com.itsm.incident.dto.ResolveIncidentRequest;
 import com.itsm.incident.dto.VerifyIncidentRequest;
@@ -49,6 +50,7 @@ public class IncidentDemoDataSeeder implements CommandLineRunner {
     private final CategoryRepository categoryRepository;
     private final AssignmentSettingsService assignmentSettings;
     private final HistoricalDemoDataSeeder historicalSeeder;
+    private final AsyncEmailSender emailSender;
 
     @Override
     public void run(String... args) {
@@ -64,7 +66,8 @@ public class IncidentDemoDataSeeder implements CommandLineRunner {
         boolean autoAssign = assignmentSettings.isAutoAssignOnReport();
         try {
             assignmentSettings.changeAutoAssignOnReport(false);
-            seed();
+            // In-app notifications as usual; real SMTP emails skipped (saves e.g. Mailtrap's monthly quota)
+            emailSender.withoutRealEmails(this::seed);
             log.info("Seeded {} demo incidents across the lifecycle", incidentRepository.count());
             historicalSeeder.seed();
         } catch (RuntimeException e) {

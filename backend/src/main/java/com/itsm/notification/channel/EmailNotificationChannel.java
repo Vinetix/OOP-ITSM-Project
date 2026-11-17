@@ -28,6 +28,9 @@ public class EmailNotificationChannel implements NotificationChannel {
                 + message.body() + "\n\n"
                 + (message.incidentNumber() == null ? "" : "Incident: " + message.incidentNumber() + "\n")
                 + "\nThis is an automatic message from the I-ITSM service desk.";
+        if (sender.skipsRealEmailsHere()) {
+            return; // demo seeding: don't spend the SMTP provider's quota (the in-app notification still exists)
+        }
         sender.send(new EmailMessage(message.recipient().getEmail(), subject, text));
     }
 }
