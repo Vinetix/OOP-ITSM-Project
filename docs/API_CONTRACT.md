@@ -1,6 +1,6 @@
 # I-ITSM API Contract
 
-Living document, updated every backend phase. Last update: **Phase 8 (automated tests; fix: reporters now receive the "received" receipt)**.
+Living document, updated every backend phase. Last update: **Phase 9 (AI category suggestion with Gemini, real email by configuration)**.
 Live, always-current docs: `http://localhost:8080/swagger-ui.html` (raw spec: `/v3/api-docs`).
 
 ## Conventions (apply to every endpoint)
@@ -1090,6 +1090,86 @@ Definitions:
 
 **TrendPoint:** `{ "date": "2026-11-02", "reported": 2, "resolved": 2, "slaViolations": 0 }`
 
+### AI category suggestion and real email (Phase 9)
+
+**Category suggestion (same endpoint as Phase 7, two new fields).**
+`POST /api/intelligence/category-suggestion`; the request is unchanged. Each item now has:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `source` | `"AI"` / `"KEYWORDS"` | Who produced the suggestion |
+| `reason` | string, AI only | One short sentence (≤ 200 characters). Absent for keyword items |
+
+`categoryId`, `code`, `name`, `matchCount` and `matchedKeywords` keep their meaning. On an AI item they show any
+keywords that also matched (often `0` / `[]`).
+
+- **AI on:** the first item is the AI's pick (`source: "AI"`, with `reason`), followed by up to 2 keyword
+  suggestions for **other** categories.
+- **AI off, failed, timed out (4 s) or returned an unknown category:** exactly the keyword result, every item with
+  `source: "KEYWORDS"`. **The AI never causes an error response.** After an AI failure (e.g. a rate limit), the AI
+  is paused (15 s after "model busy" 503 errors, 60 s after other failures) and keywords are used meanwhile.
+  With `app.ai.gemini.fallback-models` set, a busy/over-quota/unavailable model is first retried on the next
+  model in the list.
+- **Title shorter than 5 characters:** keywords only, with no AI call.
+- **Repeated identical text:** answered from a cache, with no new AI call.
+- **Timing:** an AI answer usually takes about 0.5–3 s; keyword-only answers are instant.
+
+```json
+[
+  { "categoryId": 7, "code": "AUTHENTICATION", "name": "Authentication", "matchCount": 4,
+    "matchedKeywords": ["access denied", "log in", "password", "sso"],
+    "source": "AI", "reason": "The user cannot sign in and the SSO page reports access denied." },
+  { "categoryId": 3, "code": "NETWORK", "name": "Network", "matchCount": 1, "matchedKeywords": ["vpn"],
+    "source": "KEYWORDS" }
+]
+```
+
+**AI status (any logged-in role: employee, technician, admin).**
+
+| Method | Path | Roles | Success |
+|---|---|---|---|
+| GET | `/api/intelligence/status` | Any authenticated | `200` `{ "aiEnabled": true, "provider": "GEMINI" }` (`provider` absent when off) |
+
+**Configuration** (only in your own `application-local.properties`, never in Git):
+
+```properties
+# AI category suggestion (Google Gemini). Without a key, AI is off and keywords are used.
+app.ai.gemini.api-key=<your Gemini API key from Google AI Studio>
+# optional:
+app.ai.gemini.model=gemini-3.8-flash
+# optional backup models, tried in order when a model is busy (503), over quota (429) or not available (404)
+app.ai.gemini.fallback-models=
+app.ai.timeout-ms=4000
+app.ai.enabled=true
+
+# Real email (Mailtrap sandbox). Without spring.mail.host, emails are simulated in the console.
+spring.mail.host=sandbox.smtp.mailtrap.io
+spring.mail.port=2525
+spring.mail.username=<Mailtrap username>
+spring.mail.password=<Mailtrap password>
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+app.mail.from=I-ITSM Service Desk <no-reply@itsm.local>
+# Mailtrap FREE allows 1 email per 10 seconds and 50 per month: keep this at 10000 for Mailtrap free
+app.mail.min-interval-ms=10000
+```
+
+**Email pacing:**
+- emails are sent at least `app.mail.min-interval-ms` apart (default 1500 ms; use 10000 for Mailtrap free);
+- one rejected with "too many emails" is retried up to 2 more times, waiting at least that interval;
+- simulated emails are never delayed.
+
+**Demo seeding sends no real emails.** After a reset, the demo-data notifications appear in-app as usual (and in
+the console when emails are simulated), but nothing is sent through SMTP. This saves the provider's monthly
+quota.
+
+Startup log:
+- `AI category suggestion: GEMINI (gemini-3.8-flash) …` or `… OFF (no app.ai.gemini.api-key set) …`;
+- `Email notifications: SMTP` or `SIMULATED`.
+
+**Privacy note:** only the incident's title and description (and the category list) are sent to the AI provider;
+no names, emails or ids.
+
 ## Demo data
 
 Seeded on first start when the tables are empty.
@@ -1177,6 +1257,24 @@ over the last 13 days (`INC00009`–`INC00032`, about 2 per day, office hours IS
 | EMPLOYEE | `rahul.verma@itsm.com` (Finance), `divya.nair@itsm.com` (HR), `kiran.patel@itsm.com` (Sales) |
 
 ## Changelog
+
+- **Phase 9.4:** optional backup Gemini models (`app.ai.gemini.fallback-models`); shorter 15 s pause after "model
+  busy" (503).
+
+- **Phase 9.3:** default Gemini model is now `gemini-3.8-flash` (Google no longer offers `gemini-2.5-flash` to new
+  keys). Change it with `app.ai.gemini.model` if Google renames it again.
+
+- **Phase 9.1/9.2:**
+  - emails are paced (`app.mail.min-interval-ms`, 10000 for Mailtrap free) and retried when the SMTP server
+    rejects bursts;
+  - demo seeding sends no real SMTP emails.
+
+- **Phase 9:**
+  - AI category suggestion through Google Gemini (Adapter `AiCategoryClient`, keyword fallback, 4 s timeout,
+    60 s pause after failures, cache);
+  - `source` / `reason` on category suggestions;
+  - `GET /api/intelligence/status`;
+  - real email via SMTP by configuration (Mailtrap).
 
 - **Phase 8.1:** no API changes. **Fix:** historical demo seeding is now really silent (no notifications), and its
   SLA violations are recorded at their original dates. **Do a full reset after updating.**
