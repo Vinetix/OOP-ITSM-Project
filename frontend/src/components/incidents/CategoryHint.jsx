@@ -1,7 +1,8 @@
-// The line under the report form's Category field when a suggestion is
-// selected: an AI pick shows a badge and its reason, a keyword pick shows
-// which words matched (as in F7).
+// The report form's category help: the line under the Category field when a
+// suggestion is selected (an AI pick shows a badge and its reason, a keyword
+// pick shows which words matched), and the row of suggestion chips.
 import { useLayoutEffect, useRef, useState } from 'react'
+import { Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function AiBadge({ className }) {
@@ -73,5 +74,52 @@ function AiHint({ reason }) {
         </button>
       )}
     </span>
+  )
+}
+
+// every suggestion as a chip: the AI pick has a sparkle, keyword picks show
+// how many of their words matched
+export function SuggestionChips({ suggestions, selectedId, onChoose }) {
+  if (!suggestions.length) return null
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 text-xs">
+      <span className="text-muted-foreground">Suggestions:</span>
+      {suggestions.map((s) => {
+        const ai = s.source === 'AI'
+        const count = !ai && s.matchCount > 0 ? s.matchCount : null
+        return (
+          <button
+            key={s.categoryId}
+            type="button"
+            aria-pressed={selectedId === String(s.categoryId)}
+            onClick={() => onChoose(String(s.categoryId))}
+            title={ai ? s.reason || 'Suggested by AI' : `Matched: ${s.matchedKeywords.join(', ')}`}
+            className="inline-flex items-center gap-1 rounded-full border border-border bg-popover px-2 py-0.5 font-medium outline-none hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50 aria-pressed:border-role aria-pressed:bg-role-soft"
+          >
+            {ai && (
+              <Sparkles
+                aria-hidden="true"
+                className="size-3 text-[color:color-mix(in_oklab,var(--tone-purple)_80%,var(--tint-ink))]"
+              />
+            )}
+            {s.name}
+            {ai && <span className="sr-only">, suggested by AI</span>}
+            {count && (
+              <>
+                <span
+                  aria-hidden="true"
+                  className="min-w-4 rounded-full bg-foreground/8 px-1 text-center text-[0.6875rem] leading-4 text-muted-foreground tabular-nums"
+                >
+                  {count}
+                </span>
+                <span className="sr-only">
+                  , {count} matching {count === 1 ? 'word' : 'words'}
+                </span>
+              </>
+            )}
+          </button>
+        )
+      })}
+    </div>
   )
 }

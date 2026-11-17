@@ -24,7 +24,7 @@ import { useAsync } from '@/hooks/useAsync'
 import { useFormState } from '@/hooks/useFormState'
 import { useAuth } from '@/auth/AuthContext'
 import { SimilarIncidentsBox } from '@/components/incidents/SimilarIncidentsBox'
-import { CategoryHint } from '@/components/incidents/CategoryHint'
+import { CategoryHint, SuggestionChips } from '@/components/incidents/CategoryHint'
 import { getRoleHome } from '@/config/roles'
 import { useSmartHelp } from './useSmartHelp'
 import { useNotifications } from '@/notifications/NotificationsContext'
@@ -80,7 +80,12 @@ function ReportForm({ services, categories }) {
 
   const { suggestions, suggesting, similar } = useSmartHelp(values)
   const activeIds = new Set(categories.map((c) => String(c.id)))
-  const usable = suggestions.filter((s) => activeIds.has(String(s.categoryId)))
+  // only active categories, each once (an AI pick and a keyword match could name the same one)
+  const usable = suggestions.filter(
+    (s, i) =>
+      activeIds.has(String(s.categoryId)) &&
+      suggestions.findIndex((o) => o.categoryId === s.categoryId) === i,
+  )
   const top = usable[0]
 
   // while the category is untouched, follow the best suggestion (or the service default)
@@ -208,27 +213,11 @@ function ReportForm({ services, categories }) {
                   }
                   error={errors.categoryId}
                 />
-                {usable.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                    <span className="text-muted-foreground">Suggestions:</span>
-                    {usable.map((s) => (
-                      <button
-                        key={s.categoryId}
-                        type="button"
-                        aria-pressed={values.categoryId === String(s.categoryId)}
-                        onClick={() => chooseCategory(String(s.categoryId))}
-                        title={
-                          s.source === 'AI'
-                            ? s.reason || 'Suggested by AI'
-                            : `Matched: ${s.matchedKeywords.join(', ')}`
-                        }
-                        className="rounded-full border border-border bg-popover px-2 py-0.5 font-medium outline-none hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50 aria-pressed:border-role aria-pressed:bg-role-soft"
-                      >
-                        {s.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <SuggestionChips
+                  suggestions={usable}
+                  selectedId={values.categoryId}
+                  onChoose={chooseCategory}
+                />
               </div>
             </div>
 
