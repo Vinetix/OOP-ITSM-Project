@@ -31,9 +31,24 @@ function EditLoader(props) {
   const services = useAsync(() => servicesApi.list(), [])
   const categories = useAsync(() => categoriesApi.list(), [])
   const error = services.error ?? categories.error
-  if (error)
-    return <ErrorAlert error={error} title="Couldn’t load the form" onRetry={services.reload} />
-  if (!services.data || !categories.data) return <LoadingState label="Loading" />
+  // a dialog must always have a title for screen readers, even while it loads
+  const hiddenTitle = <DialogTitle className="sr-only">Edit incident</DialogTitle>
+  if (error) {
+    return (
+      <>
+        {hiddenTitle}
+        <ErrorAlert error={error} title="Couldn’t load the form" onRetry={services.reload} />
+      </>
+    )
+  }
+  if (!services.data || !categories.data) {
+    return (
+      <>
+        {hiddenTitle}
+        <LoadingState label="Loading" />
+      </>
+    )
+  }
   return <EditForm services={services.data} categories={categories.data} {...props} />
 }
 

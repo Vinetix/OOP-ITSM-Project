@@ -84,7 +84,7 @@ export default function IncidentDetailPage() {
     }
     seenLevel.current = incident.escalationLevel
   }, [incident])
-  usePageTitle(incident ? `${incident.number} ${incident.title}` : 'Incident')
+  usePageTitle(incident ? incident.number : 'Incident')
 
   const back = (
     <Button asChild variant="ghost" className="-ml-2 mb-3 h-8 text-muted-foreground">

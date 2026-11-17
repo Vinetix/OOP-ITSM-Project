@@ -1,5 +1,6 @@
 // One notification: icon, title, two lines of body, when. Unread ones get a dot
 // and a bold title; important ones (someone has to act) get an amber edge.
+import { createElement } from 'react'
 import { Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { notificationIcon } from '@/config/notifications'
@@ -8,7 +9,6 @@ import { timeSince } from '@/lib/time'
 import { cn } from '@/lib/utils'
 
 export function NotificationContent({ notification: n }) {
-  const Icon = notificationIcon(n.type)
   return (
     <span className="flex w-full min-w-0 items-start gap-3 text-left">
       <span
@@ -21,7 +21,7 @@ export function NotificationContent({ notification: n }) {
               : 'bg-muted text-muted-foreground',
         )}
       >
-        <Icon aria-hidden="true" className="size-4" />
+        {createElement(notificationIcon(n.type), { 'aria-hidden': true, className: 'size-4' })}
       </span>
       <span className="grid min-w-0 flex-1 gap-0.5">
         <span className="flex items-start gap-2">

@@ -49,3 +49,6 @@ export function formatMinutes(minutes) {
     .filter(Boolean)
     .join(' ')
 }
+
+// a badge count: 99+ once it gets long
+export const formatCount = (n) => (n > 99 ? '99+' : String(n))

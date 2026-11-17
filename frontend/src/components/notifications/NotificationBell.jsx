@@ -18,12 +18,11 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { getRoleHome } from '@/config/roles'
 import { getErrorMessage } from '@/lib/errors'
+import { formatCount } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useNotifications } from '@/notifications/NotificationsContext'
 import { useOpenNotification } from '@/notifications/useOpenNotification'
 import { NotificationContent } from './NotificationItem'
-
-export const countLabel = (n) => (n > 99 ? '99+' : String(n))
 
 export function NotificationBell() {
   const { user } = useAuth()
@@ -69,7 +68,7 @@ export function NotificationBell() {
           <Bell aria-hidden="true" />
           {unread > 0 && (
             <span className="absolute -top-0.5 -right-0.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-destructive px-1 text-[0.65rem] leading-none font-bold text-white ring-2 ring-background">
-              {countLabel(unread)}
+              {formatCount(unread)}
             </span>
           )}
         </Button>

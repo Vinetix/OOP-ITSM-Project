@@ -40,7 +40,18 @@ the only origin the backend accepts (CORS).
 |---|---|
 | `npm run dev` | Development server with hot reload |
 | `npm run build` | Production build into `dist/` |
-| `npm run preview` | Serve the production build locally |
+| `npm run preview` | Serve the production build on http://localhost:5173 |
+| `npm run lint` | Check the code with oxlint |
+
+**Settings.** The only setting is `VITE_API_BASE_URL` in `.env`, the backend's address
+(default `http://localhost:8080`). `.env.example` holds the default; there are no secrets.
+
+`npm run dev` and `npm run preview` both use port 5173 (the backend only accepts that
+origin), so stop one before starting the other.
+
+**Troubleshooting a fresh clone.** If the page shows "Can't resolve 'shadcn/tailwind.css'",
+run `npm install` again in `frontend/`. If `npx shadcn add …` offers to create a new
+project, you're not in `frontend/` (that's where `components.json` lives).
 
 ## Demo accounts
 
@@ -52,6 +63,12 @@ All use the password `Password@123`.
 | Technician (senior) | `ravi.kumar@itsm.com`, `fatima.khan@itsm.com` |
 | Technician | `sneha.reddy@itsm.com`, `arjun.mehta@itsm.com` |
 | Employee | `rahul.verma@itsm.com`, `divya.nair@itsm.com`, `kiran.patel@itsm.com` |
+
+## Light and dark
+
+The theme button in the top bar (and on the sign-in pages) offers Light, Dark and
+System. System is the default and follows the browser's colour preference, switching
+live when it changes. The choice is saved per browser.
 
 ## How it's organised
 

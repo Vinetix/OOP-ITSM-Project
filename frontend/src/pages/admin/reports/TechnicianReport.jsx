@@ -15,7 +15,8 @@ import {
 import { WorkloadBar } from '@/components/assignment/WorkloadBar'
 import { Button } from '@/components/ui/button'
 import { downloadCsv } from '@/lib/csv'
-import { COLORS, ReportCard, axisProps, minutes, rating, tooltipStyle } from './reportBits'
+import { ReportCard } from './ReportCard'
+import { COLORS, axisProps, minutes, rating, tooltipStyle } from './reportBits'
 
 const COLUMNS = [
   { key: 'fullName', label: 'Technician' },
@@ -37,7 +38,7 @@ function sortRows(rows, { key, dir }) {
   })
 }
 
-export function technicianCsv(rows, label) {
+function technicianCsv(rows, label) {
   downloadCsv(
     `technicians-${label}.csv`,
     [

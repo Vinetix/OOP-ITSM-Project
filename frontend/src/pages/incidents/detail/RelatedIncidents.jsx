@@ -18,7 +18,7 @@ import { getRoleHome } from '@/config/roles'
 import { useAsync } from '@/hooks/useAsync'
 import { getErrorMessage } from '@/lib/errors'
 
-export function canManageDuplicates(incident, user) {
+function canManageDuplicates(incident, user) {
   return (
     user.role === 'ADMIN' ||
     (user.role === 'TECHNICIAN' && incident.assignedTechnician?.id === user.id)

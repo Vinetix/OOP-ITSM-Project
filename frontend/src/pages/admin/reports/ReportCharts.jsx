@@ -19,7 +19,8 @@ import {
 import { priorityOf } from '@/config/catalog'
 import { STATUSES } from '@/config/incidents'
 import { formatDate } from '@/lib/format'
-import { COLORS, PALETTE, ReportCard, axisProps, dash, percent, tooltipStyle } from './reportBits'
+import { ReportCard } from './ReportCard'
+import { COLORS, PALETTE, axisProps, dash, percent, tooltipStyle } from './reportBits'
 
 const shortDate = (iso) => formatDate(iso).slice(0, 6) // "02 Nov"
 

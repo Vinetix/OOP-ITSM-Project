@@ -1,6 +1,5 @@
 // The theme button: shows the current choice (sun, moon or monitor) and opens a
 // small menu with Light, Dark and System.
-import { Monitor, Moon, Sun } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -11,13 +10,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { THEME_OPTIONS } from '@/theme/themeOptions'
 import { useTheme } from '@/theme/ThemeProvider'
-
-export const THEME_OPTIONS = [
-  { value: 'light', label: 'Light', icon: Sun, description: 'Pale enamel panels' },
-  { value: 'dark', label: 'Dark', icon: Moon, description: 'Easier on the eyes at night' },
-  { value: 'system', label: 'System', icon: Monitor, description: 'Follow this device’s setting' },
-]
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme()

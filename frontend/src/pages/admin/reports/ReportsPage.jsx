@@ -29,7 +29,8 @@ import {
   SlaByPriorityChart,
   TrendChart,
 } from './ReportCharts'
-import { complianceTone, minutes, percent, rating, ReportCard } from './reportBits'
+import { ReportCard } from './ReportCard'
+import { complianceTone, minutes, percent, rating } from './reportBits'
 import { TechnicianReport } from './TechnicianReport'
 
 const PERIODS = [

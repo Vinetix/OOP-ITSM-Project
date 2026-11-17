@@ -4,6 +4,7 @@
 //   /technician/...     technicians  ├ inside the app shell, built from NAVIGATION
 //   /admin/...          admins       ┘
 //   /forbidden, *       anyone
+import { lazy, Suspense } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router'
 import App from './App'
 import { useAuth } from '@/auth/AuthContext'
@@ -16,13 +17,6 @@ import { ROLE_CONFIG, getRoleHome } from '@/config/roles'
 import { AppShell } from '@/layouts/AppShell'
 import { AuthLayout } from '@/layouts/AuthLayout'
 import AdminHomePage from '@/pages/admin/AdminHomePage'
-import AssignmentSettingsPage from '@/pages/admin/AssignmentSettingsPage'
-import AuditLogPage from '@/pages/admin/AuditLogPage'
-import ReportsPage from '@/pages/admin/reports/ReportsPage'
-import WorkloadPage from '@/pages/admin/WorkloadPage'
-import CatalogPage from '@/pages/admin/catalog/CatalogPage'
-import SlaPoliciesPage from '@/pages/admin/sla/SlaPoliciesPage'
-import SlaViolationsPage from '@/pages/admin/sla/SlaViolationsPage'
 import UsersPage from '@/pages/admin/UsersPage'
 import LoginPage from '@/pages/auth/LoginPage'
 import RegisterPage from '@/pages/auth/RegisterPage'
@@ -33,10 +27,25 @@ import ReportIncidentPage from '@/pages/incidents/ReportIncidentPage'
 import ForbiddenPage from '@/pages/common/ForbiddenPage'
 import NotFoundPage from '@/pages/common/NotFoundPage'
 import NotificationsPage from '@/pages/common/NotificationsPage'
+import RouteErrorPage from '@/pages/common/RouteErrorPage'
 import ProfilePage from '@/pages/common/ProfilePage'
 import EmployeeHomePage from '@/pages/employee/EmployeeHomePage'
 import MyWorkloadPage from '@/pages/technician/MyWorkloadPage'
 import TechnicianHomePage from '@/pages/technician/TechnicianHomePage'
+
+// Admin-only pages load when first opened, so everyone else downloads less.
+const ReportsPage = lazy(() => import('@/pages/admin/reports/ReportsPage'))
+const AuditLogPage = lazy(() => import('@/pages/admin/AuditLogPage'))
+const CatalogPage = lazy(() => import('@/pages/admin/catalog/CatalogPage'))
+const SlaPoliciesPage = lazy(() => import('@/pages/admin/sla/SlaPoliciesPage'))
+const SlaViolationsPage = lazy(() => import('@/pages/admin/sla/SlaViolationsPage'))
+const AssignmentSettingsPage = lazy(() => import('@/pages/admin/AssignmentSettingsPage'))
+const WorkloadPage = lazy(() => import('@/pages/admin/WorkloadPage'))
+const later = (Page, label) => (
+  <Suspense fallback={<LoadingState label={label} />}>
+    <Page />
+  </Suspense>
+)
 
 // Pages built so far. Any other nav item gets the Coming Soon page.
 const PAGES = {
@@ -47,20 +56,20 @@ const PAGES = {
   '/admin': <AdminHomePage />,
   '/admin/users': <UsersPage />,
   '/admin/notifications': <NotificationsPage />,
-  '/admin/audit': <AuditLogPage />,
-  '/admin/reports': <ReportsPage />,
-  '/admin/sla': <SlaViolationsPage />,
+  '/admin/audit': later(AuditLogPage, 'Loading the audit log'),
+  '/admin/reports': later(ReportsPage, 'Loading reports'),
+  '/admin/sla': later(SlaViolationsPage, 'Loading'),
   '/employee/notifications': <NotificationsPage />,
   '/technician/notifications': <NotificationsPage />,
-  '/admin/assignment': <AssignmentSettingsPage />,
-  '/admin/workload': <WorkloadPage />,
+  '/admin/assignment': later(AssignmentSettingsPage, 'Loading'),
+  '/admin/workload': later(WorkloadPage, 'Loading'),
   '/technician/workload': <MyWorkloadPage />,
   '/admin/incidents': <IncidentListPage />,
   '/employee/incidents': <IncidentListPage />,
   '/employee/incidents/new': <ReportIncidentPage />,
   '/technician/incidents': <IncidentListPage />,
-  '/admin/catalog': <CatalogPage />,
-  '/admin/sla-policies': <SlaPoliciesPage />,
+  '/admin/catalog': later(CatalogPage, 'Loading'),
+  '/admin/sla-policies': later(SlaPoliciesPage, 'Loading'),
   '/admin/profile': <ProfilePage />,
 }
 
@@ -103,6 +112,7 @@ function RootRedirect() {
 export const router = createBrowserRouter([
   {
     element: <App />,
+    errorElement: <RouteErrorPage />,
     children: [
       { path: '/', element: <RootRedirect /> },
       {

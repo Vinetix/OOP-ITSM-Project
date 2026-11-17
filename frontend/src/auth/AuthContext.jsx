@@ -5,7 +5,6 @@ import { toast } from 'sonner'
 import { authApi } from '@/api/authApi'
 import { setUnauthorizedHandler, tokenStorage } from '@/api/axiosClient'
 import { usersApi } from '@/api/usersApi'
-import { getErrorMessage } from '@/lib/errors'
 
 const AuthContext = createContext(null)
 
@@ -43,13 +42,13 @@ export function AuthProvider({ children }) {
 
   // Any 401 ends the session; the route guards then send the user to /login.
   useEffect(() => {
-    setUnauthorizedHandler((error) => {
+    setUnauthorizedHandler(() => {
       const wasRestoring = statusRef.current === 'loading'
       setUser(null)
       setStatus('anonymous')
       if (!wasRestoring) {
         // the id stops several failed requests stacking identical toasts
-        toast.error(getErrorMessage(error), { id: 'session-ended' })
+        toast.error('Your session has expired, please log in again', { id: 'session-ended' })
       }
     })
     return () => setUnauthorizedHandler(null)

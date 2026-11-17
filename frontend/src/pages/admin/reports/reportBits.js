@@ -1,16 +1,6 @@
-// Small shared pieces for the reports page: the card frame with its own loading
-// and error state, number formatting where a missing value shows "–", and the
-// chart colours (taken from the app's theme so charts match the badges).
-import { ErrorAlert } from '@/components/ErrorAlert'
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
+// Shared report helpers: number formatting where a missing value shows "–",
+// and the chart colours (taken from the app's theme so charts match the badges,
+// in light and dark).
 import { formatMinutes } from '@/lib/format'
 
 export const dash = '–'
@@ -56,37 +46,4 @@ export const tooltipStyle = {
     fontSize: 13,
   },
   labelStyle: { fontWeight: 600, color: 'var(--foreground)' },
-}
-
-export function ReportCard({
-  title,
-  description,
-  state,
-  action,
-  className,
-  children,
-  height = 'h-64',
-}) {
-  return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle className="text-lg font-bold">{title}</CardTitle>
-        {description && <CardDescription>{description}</CardDescription>}
-        {action && <CardAction>{action}</CardAction>}
-      </CardHeader>
-      <CardContent>
-        {state.error ? (
-          <ErrorAlert
-            error={state.error}
-            title={`Couldn’t load “${title}”`}
-            onRetry={state.reload}
-          />
-        ) : !state.data ? (
-          <Skeleton className={`${height} w-full`} />
-        ) : (
-          children(state.data)
-        )}
-      </CardContent>
-    </Card>
-  )
 }

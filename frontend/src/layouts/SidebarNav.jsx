@@ -3,7 +3,7 @@
 import { NavLink, useLocation } from 'react-router'
 import { Lamp } from '@/components/Lamp'
 import { SoonTag } from '@/components/SoonTag'
-import { countLabel } from '@/components/notifications/NotificationBell'
+import { formatCount } from '@/lib/format'
 import { useNotifications } from '@/notifications/NotificationsContext'
 import { NAVIGATION } from '@/config/navigation'
 import { ROLE_CONFIG } from '@/config/roles'
@@ -74,7 +74,7 @@ export function SidebarNav({ role, onNavigate }) {
                         aria-label={`${unread} unread`}
                         className="rounded-full bg-destructive px-1.5 py-0.5 text-[0.7rem] leading-none font-bold text-white tabular-nums"
                       >
-                        {countLabel(unread)}
+                        {formatCount(unread)}
                       </span>
                     )}
                   </>
