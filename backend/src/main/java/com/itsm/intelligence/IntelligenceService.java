@@ -7,6 +7,7 @@ import com.itsm.common.exception.UnauthorizedOperationException;
 import com.itsm.incident.Incident;
 import com.itsm.incident.IncidentAccessPolicy;
 import com.itsm.incident.IncidentRepository;
+import com.itsm.intelligence.dto.AiStatusResponse;
 import com.itsm.intelligence.dto.CategorySuggestionResponse;
 import com.itsm.intelligence.dto.SimilarIncidentResponse;
 import com.itsm.intelligence.dto.TextCheckRequest;
@@ -23,7 +24,7 @@ import java.util.List;
 public class IntelligenceService {
 
     private final DuplicateDetector duplicateDetector;
-    private final CategorySuggester categorySuggester;
+    private final CategorySuggestionService categorySuggestionService;
     private final IncidentRepository incidentRepository;
     private final ITServiceRepository serviceRepository;
     private final IncidentAccessPolicy accessPolicy;
@@ -47,7 +48,12 @@ public class IntelligenceService {
                 incident.getCategory(), incident.getId());
     }
 
+    /** AI suggestion first (when available), keyword suggestions as the safety net. */
     public List<CategorySuggestionResponse> suggestCategories(TextCheckRequest request) {
-        return categorySuggester.suggest(request.title(), request.description());
+        return categorySuggestionService.suggest(request.title(), request.description());
+    }
+
+    public AiStatusResponse aiStatus() {
+        return categorySuggestionService.status();
     }
 }

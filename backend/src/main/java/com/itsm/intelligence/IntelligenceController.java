@@ -1,5 +1,6 @@
 package com.itsm.intelligence;
 
+import com.itsm.intelligence.dto.AiStatusResponse;
 import com.itsm.intelligence.dto.CategorySuggestionResponse;
 import com.itsm.intelligence.dto.SimilarIncidentResponse;
 import com.itsm.intelligence.dto.TextCheckRequest;
@@ -31,9 +32,16 @@ public class IntelligenceController {
     }
 
     @PostMapping("/api/intelligence/category-suggestion")
-    @Operation(summary = "Suggested categories for this text, best first, with the matched keywords (any role)")
+    @Operation(summary = "Suggested categories for this text, best first (any role). With AI on, the first item is the "
+            + "AI's pick (source AI, with a reason), followed by keyword suggestions (source KEYWORDS)")
     public List<CategorySuggestionResponse> suggestCategories(@Valid @RequestBody TextCheckRequest request) {
         return intelligenceService.suggestCategories(request);
+    }
+
+    @GetMapping("/api/intelligence/status")
+    @Operation(summary = "Whether AI category suggestions are on, and the provider (any logged-in role)")
+    public AiStatusResponse aiStatus() {
+        return intelligenceService.aiStatus();
     }
 
     @GetMapping("/api/incidents/{id}/similar")

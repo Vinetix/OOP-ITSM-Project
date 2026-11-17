@@ -3,6 +3,7 @@ package com.itsm.intelligence;
 import com.itsm.catalog.Category;
 import com.itsm.catalog.CategoryRepository;
 import com.itsm.intelligence.dto.CategorySuggestionResponse;
+import com.itsm.intelligence.dto.SuggestionSource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -12,7 +13,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Intelligent feature: category suggestion. Each active category has keywords (managed by the admin in
+ * Intelligent feature: category suggestion by keywords (also the fallback for the AI suggestion, see
+ * CategorySuggestionService). Each active category has keywords (managed by the admin in
  * the catalog). A keyword matches when all of its words appear in the incident text, after the same
  * normalisation (so "log in" matches "logging in", "queries" matches "query"). Categories are ranked by
  * the number of matched keywords; ties go to the category name.
@@ -44,7 +46,7 @@ public class CategorySuggester {
                     .toList();
             if (!matched.isEmpty()) {
                 ranked.add(new CategorySuggestionResponse(category.getId(), category.getCode(), category.getName(),
-                        matched.size(), matched));
+                        matched.size(), matched, SuggestionSource.KEYWORDS, null));
             }
         }
         return ranked.stream()
