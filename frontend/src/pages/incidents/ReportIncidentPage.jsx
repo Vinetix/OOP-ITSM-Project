@@ -1,6 +1,7 @@
 // The report form. The estimated priority uses the same formula as the server,
 // but only as a hint: the server's priority is the one the incident gets.
 import { useEffect, useState } from 'react'
+import { LoaderCircle } from 'lucide-react'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { categoriesApi, servicesApi } from '@/api/catalogApi'
@@ -23,6 +24,7 @@ import { useAsync } from '@/hooks/useAsync'
 import { useFormState } from '@/hooks/useFormState'
 import { useAuth } from '@/auth/AuthContext'
 import { SimilarIncidentsBox } from '@/components/incidents/SimilarIncidentsBox'
+import { CategoryHint } from '@/components/incidents/CategoryHint'
 import { getRoleHome } from '@/config/roles'
 import { useSmartHelp } from './useSmartHelp'
 import { useNotifications } from '@/notifications/NotificationsContext'
@@ -76,7 +78,7 @@ function ReportForm({ services, categories }) {
     service &&
     estimatePriority(values.impact, values.urgency, service.criticality, values.affectedUsers)
 
-  const { suggestions, similar } = useSmartHelp(values)
+  const { suggestions, suggesting, similar } = useSmartHelp(values)
   const activeIds = new Set(categories.map((c) => String(c.id)))
   const usable = suggestions.filter((s) => activeIds.has(String(s.categoryId)))
   const top = usable[0]
@@ -150,7 +152,7 @@ function ReportForm({ services, categories }) {
           <CardContent className="grid gap-6">
             <FormAlert message={form.formError} />
 
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid items-start gap-5 sm:grid-cols-2">
               <div className="grid gap-2">
                 <SelectField
                   id="serviceId"
@@ -183,10 +185,24 @@ function ReportForm({ services, categories }) {
                     },
                     ...categories.map((c) => ({ value: String(c.id), label: c.name })),
                   ]}
+                  labelAside={
+                    suggesting && (
+                      <span
+                        role="status"
+                        className="inline-flex items-center gap-1 text-xs leading-none text-muted-foreground"
+                      >
+                        <LoaderCircle
+                          aria-hidden="true"
+                          className="size-3.5 animate-spin motion-reduce:animate-none"
+                        />
+                        Finding the best category…
+                      </span>
+                    )
+                  }
                   hint={
-                    !categoryTouched && top && values.categoryId === String(top.categoryId)
-                      ? `✨ Suggested from: ${top.matchedKeywords.join(', ')}`
-                      : service && !defaultCategoryId && values.categoryId === DEFAULT
+                    !categoryTouched && top && values.categoryId === String(top.categoryId) ? (
+                      <CategoryHint suggestion={top} />
+                    ) : service && !defaultCategoryId && values.categoryId === DEFAULT
                         ? 'This service has no default, so please choose one.'
                         : undefined
                   }
@@ -201,7 +217,11 @@ function ReportForm({ services, categories }) {
                         type="button"
                         aria-pressed={values.categoryId === String(s.categoryId)}
                         onClick={() => chooseCategory(String(s.categoryId))}
-                        title={`Matched: ${s.matchedKeywords.join(', ')}`}
+                        title={
+                          s.source === 'AI'
+                            ? s.reason || 'Suggested by AI'
+                            : `Matched: ${s.matchedKeywords.join(', ')}`
+                        }
                         className="rounded-full border border-border bg-popover px-2 py-0.5 font-medium outline-none hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50 aria-pressed:border-role aria-pressed:bg-role-soft"
                       >
                         {s.name}

@@ -1,5 +1,6 @@
 // A labelled dropdown. Options may carry a hint, shown in the list but not in
-// the closed field.
+// the closed field. `labelAside` sits right after the label (e.g. a
+// small loading note).
 //   <SelectField id="criticality" label="Criticality" value={v} onChange={set}
 //     options={[{ value: 'HIGH', label: 'High', hint: '...' }]} error={errors.criticality} />
 import { Label } from '@/components/ui/label'
@@ -21,6 +22,7 @@ export function SelectField({
   placeholder = 'Choose…',
   error,
   hint,
+  labelAside,
   optional = false,
   disabled = false,
   className,
@@ -31,10 +33,20 @@ export function SelectField({
 
   return (
     <div className={cn('grid gap-1.5', className)}>
-      <Label htmlFor={id} className="gap-1">
-        {label}
-        {optional && <span className="font-normal text-muted-foreground">(optional)</span>}
-      </Label>
+      {labelAside ? (
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <Label htmlFor={id} className="gap-1">
+            {label}
+            {optional && <span className="font-normal text-muted-foreground">(optional)</span>}
+          </Label>
+          {labelAside}
+        </div>
+      ) : (
+        <Label htmlFor={id} className="gap-1">
+          {label}
+          {optional && <span className="font-normal text-muted-foreground">(optional)</span>}
+        </Label>
+      )}
       <Select value={value || undefined} onValueChange={onChange} disabled={disabled}>
         <SelectTrigger
           id={id}
@@ -65,9 +77,9 @@ export function SelectField({
         </p>
       ) : (
         hint && (
-          <p id={hintId} className="text-sm text-muted-foreground">
+          <div id={hintId} className="text-sm text-muted-foreground">
             {hint}
-          </p>
+          </div>
         )
       )}
     </div>
