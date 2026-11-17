@@ -69,6 +69,26 @@ class IntelligenceAndReportsIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    @DisplayName("Phase 9: AI status is readable by every role (AI off in tests)")
+    void aiStatusForEveryRole() throws Exception {
+        for (String user : new String[]{RAHUL, FATIMA, ADMIN}) {
+            call(user, get("/api/intelligence/status"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.aiEnabled").value(false))
+                    .andExpect(jsonPath("$.provider").doesNotExist());
+        }
+    }
+
+    @Test
+    @DisplayName("Phase 9: with AI off, suggestions are keyword-based and marked KEYWORDS")
+    void keywordSourceWhenAiOff() throws Exception {
+        call(RAHUL, post("/api/intelligence/category-suggestion")
+                        .content("{\"title\": \"Cannot log in, password rejected\", \"description\": \"SSO says access denied\"}"))
+                .andExpect(jsonPath("$[0].source").value("KEYWORDS"))
+                .andExpect(jsonPath("$[0].reason").doesNotExist());
+    }
+
+    @Test
     @DisplayName("Search: by number, and by priority + status")
     void search() throws Exception {
         call(ADMIN, get("/api/incidents").param("q", "INC00008"))

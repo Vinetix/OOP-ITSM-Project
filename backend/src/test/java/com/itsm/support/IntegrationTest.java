@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
 /**
  * Starts the whole application against the test database (schema recreated, demo data seeded once and
  * shared by all integration test classes). The background SLA monitor is off (tests drive it
- * explicitly) and email is always simulated.
+ * explicitly), email is always simulated and AI is off (no real Gemini calls from tests).
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
@@ -19,7 +19,8 @@ import java.lang.annotation.Target;
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "app.seed.enabled=true",
         "app.sla.monitor.enabled=false",
-        "spring.mail.host="
+        "spring.mail.host=",
+        "app.ai.gemini.api-key="
 })
 @EnabledIf(value = "com.itsm.support.TestDatabase#isAvailable",
         disabledReason = "Test database not reachable (CREATE DATABASE itsm_test;)")
