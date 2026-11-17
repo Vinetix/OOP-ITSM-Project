@@ -11,6 +11,7 @@ import { IncidentCounts } from '@/components/incidents/IncidentCounts'
 import { RecentIncidents } from '@/components/incidents/RecentIncidents'
 import { ReportsSummaryCard } from '@/components/ReportsSummaryCard'
 import { AdminSlaCards } from '@/components/incidents/SlaHomeCards'
+import { AiStatusLine } from '@/components/AiStatusLine'
 import { ErrorAlert } from '@/components/ErrorAlert'
 import { Lamp } from '@/components/Lamp'
 import { PageHeader } from '@/components/PageHeader'
@@ -221,6 +222,7 @@ function SectionsCard() {
             </li>
           ))}
         </ul>
+        <AiStatusLine className="mt-3 border-t pt-3" />
       </CardContent>
     </Card>
   )

@@ -21,6 +21,11 @@ problems, technicians work on them, and admins manage users.
 - **Phase F7:** search and filters on every incident list (all in the URL), category
   suggestion and similar-incident warnings on the report form, duplicate links on the
   incident page, and the admin reports dashboard (Recharts) with CSV export.
+- **Phase F8:** dark mode (Light / Dark / System), error boundaries, page titles,
+  lazy-loaded admin pages and a clean build.
+- **Phase F9:** AI category suggestions on the report form: an "AI suggestion" badge
+  with the model's reason, a waiting spinner, keyword hints as the fallback, and an
+  "AI suggestions: On/Off" line on the admin dashboard.
 
 ## Run it
 

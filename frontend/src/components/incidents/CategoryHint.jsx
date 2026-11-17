@@ -58,7 +58,11 @@ function AiHint({ reason }) {
         <AiBadge />
         {reason && (
           <>
-            <span aria-hidden="true"> · </span>
+            {/* fixed spacing: plain spaces render unevenly around the dot in Overpass */}
+            <span aria-hidden="true" className="mx-1.5">
+              ·
+            </span>
+            <span className="sr-only">: </span>
             <span>{reason}</span>
           </>
         )}
