@@ -83,7 +83,7 @@ export function LifecycleStepper({ status, className }) {
                 {LABELS[step]}
               </span>
               {step === 'IN_PROGRESS' && waiting && (
-                <span className="w-fit rounded-sm border border-[color:var(--tone-purple)]/40 bg-[color:color-mix(in_oklab,var(--tone-purple)_10%,transparent)] px-1.5 py-0.5 text-xs font-semibold text-[color:color-mix(in_oklab,var(--tone-purple)_75%,black)] md:mx-auto">
+                <span className="w-fit rounded-sm border border-[color:var(--tone-purple)]/40 bg-[color:color-mix(in_oklab,var(--tone-purple)_10%,transparent)] px-1.5 py-0.5 text-xs font-semibold text-[color:color-mix(in_oklab,var(--tone-purple)_75%,var(--tint-ink))] md:mx-auto">
                   Waiting for reporter
                 </span>
               )}

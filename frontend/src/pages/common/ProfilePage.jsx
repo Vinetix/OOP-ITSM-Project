@@ -7,7 +7,9 @@ import { useAuth } from '@/auth/AuthContext'
 import { FormField } from '@/components/FormField'
 import { InfoList } from '@/components/InfoList'
 import { PageHeader } from '@/components/PageHeader'
+import { ChoiceCards } from '@/components/ChoiceCards'
 import { PasswordInput } from '@/components/PasswordInput'
+import { THEME_OPTIONS } from '@/components/ThemeToggle'
 import { RoleBadge } from '@/components/RoleBadge'
 import { SkillChips } from '@/components/SkillChips'
 import { StatusBadge } from '@/components/StatusBadge'
@@ -17,6 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { getErrorCode, getErrorMessage, getFieldErrors } from '@/lib/errors'
 import { formatDate } from '@/lib/format'
 import { focusFirstError, optionalText, rules, validate } from '@/lib/validation'
+import { useTheme } from '@/theme/ThemeProvider'
 
 function FormAlert({ message }) {
   if (!message) return null
@@ -255,6 +258,27 @@ function AccountCard() {
   )
 }
 
+function ThemeCard() {
+  const { theme, setTheme } = useTheme()
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg font-bold">Theme</CardTitle>
+        <CardDescription>Saved for this browser.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ChoiceCards
+          name="theme"
+          label="Appearance"
+          options={THEME_OPTIONS}
+          value={theme}
+          onChange={setTheme}
+        />
+      </CardContent>
+    </Card>
+  )
+}
+
 export default function ProfilePage() {
   return (
     <>
@@ -264,7 +288,10 @@ export default function ProfilePage() {
           <DetailsForm />
           <PasswordForm />
         </div>
-        <AccountCard />
+        <div className="grid gap-6">
+          <AccountCard />
+          <ThemeCard />
+        </div>
       </div>
     </>
   )

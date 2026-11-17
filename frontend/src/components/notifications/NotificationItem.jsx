@@ -17,7 +17,7 @@ export function NotificationContent({ notification: n }) {
           n.type === 'ESCALATED'
             ? 'bg-lamp-stop/12 text-lamp-stop'
             : n.important
-              ? 'bg-lamp-caution/15 text-[color:color-mix(in_oklab,var(--lamp-caution)_70%,black)]'
+              ? 'bg-lamp-caution/15 text-[color:color-mix(in_oklab,var(--lamp-caution)_70%,var(--tint-ink))]'
               : 'bg-muted text-muted-foreground',
         )}
       >

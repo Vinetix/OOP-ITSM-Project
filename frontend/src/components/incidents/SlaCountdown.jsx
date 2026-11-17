@@ -23,7 +23,7 @@ export function SlaCountdown({
   let tone
   if (state === 'stopped-met') {
     text = `Met in ${formatRemaining(new Date(stoppedAt) - new Date(startedAt ?? stoppedAt))}`
-    tone = 'text-[color:color-mix(in_oklab,var(--lamp-go)_75%,black)]'
+    tone = 'text-[color:color-mix(in_oklab,var(--lamp-go)_75%,var(--tint-ink))]'
   } else if (state === 'stopped-late') {
     text = `Late by ${formatRemaining(Math.max(new Date(stoppedAt) - new Date(dueAt), 0))}`
     tone = 'text-destructive'
@@ -34,7 +34,7 @@ export function SlaCountdown({
     text = `${formatRemaining(remainingMs(dueAt, now))} left`
     tone =
       used >= 0.75
-        ? 'text-[color:color-mix(in_oklab,var(--lamp-caution)_70%,black)]'
+        ? 'text-[color:color-mix(in_oklab,var(--lamp-caution)_70%,var(--tint-ink))]'
         : 'text-foreground'
   }
 

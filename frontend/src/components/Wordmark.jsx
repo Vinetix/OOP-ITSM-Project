@@ -5,7 +5,16 @@ export function Wordmark({ className }) {
   return (
     <span className={cn('inline-flex items-center gap-2.5', className)}>
       <svg viewBox="0 0 32 32" className="size-7 shrink-0" aria-hidden="true">
-        <rect width="32" height="32" rx="7" fill="#1d2421" />
+        <rect
+          x="0.5"
+          y="0.5"
+          width="31"
+          height="31"
+          rx="7"
+          fill="#1d2421"
+          stroke="currentColor"
+          strokeOpacity="0.2"
+        />
         <path d="M10 6v20" stroke="#8e9890" strokeWidth="2" />
         <circle cx="10" cy="9" r="3" fill="#2f8f4e" />
         <circle cx="10" cy="16" r="3" fill="#c8871a" />

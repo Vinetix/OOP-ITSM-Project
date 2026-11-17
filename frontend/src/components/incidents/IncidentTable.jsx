@@ -46,7 +46,7 @@ const COLUMNS = {
       <span className="grid gap-1">
         <span className="line-clamp-2 max-w-sm font-semibold">{i.title}</span>
         {tag && (
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-[color:color-mix(in_oklab,var(--lamp-caution)_70%,black)]">
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-[color:color-mix(in_oklab,var(--lamp-caution)_70%,var(--tint-ink))]">
             <Lamp tone="caution" />
             {tag}
           </span>

@@ -1,4 +1,4 @@
-// Toasts. Replaces shadcn's version, which needed next-themes; we have one theme.
+// Toasts. Replaces shadcn's version (which needed next-themes): the theme comes in as a prop.
 import { CircleAlert, CircleCheck, Info, LoaderCircle, TriangleAlert } from 'lucide-react'
 import { Toaster as Sonner } from 'sonner'
 

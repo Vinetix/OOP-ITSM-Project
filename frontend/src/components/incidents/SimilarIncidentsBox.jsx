@@ -44,7 +44,7 @@ export function SimilarIncidentsBox({ items, linkTo }) {
       <h2 id="similar-heading" className="flex items-center gap-2 font-semibold">
         <Info
           aria-hidden="true"
-          className="size-4 text-[color:color-mix(in_oklab,var(--lamp-caution)_70%,black)]"
+          className="size-4 text-[color:color-mix(in_oklab,var(--lamp-caution)_70%,var(--tint-ink))]"
         />
         Similar open incidents already reported
       </h2>

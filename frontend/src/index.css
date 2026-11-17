@@ -78,6 +78,16 @@
   --chart-4: #c8871a;
   --chart-5: #c2362f;
 
+  /* Tinted text is mixed towards this: black on light plates, white on dark ones */
+  --tint-ink: black;
+
+  /* Each role's own colour (role badges, charts), whoever is signed in */
+  --role-employee: #1f5fad;
+  --role-technician: #0e7c78;
+  --role-admin: #3b3f9e;
+
+  color-scheme: light;
+
   /* Sidebar ("the track") */
   --sidebar: #d9ddd4;
   --sidebar-foreground: #1d2421;
@@ -87,6 +97,81 @@
   --sidebar-accent-foreground: #1d2421;
   --sidebar-border: #c3c9bf;
   --sidebar-ring: var(--role);
+}
+
+/* Dark mode: the signal box at night. Same meanings, lighter accents on dark plates.
+   The class is set on <html> by the inline script in index.html and by ThemeProvider. */
+:root.dark {
+  --role: #d4dad5;
+}
+:root.dark[data-role="EMPLOYEE"] {
+  --role: #77a8ec;
+}
+:root.dark[data-role="TECHNICIAN"] {
+  --role: #45c2bb;
+}
+:root.dark[data-role="ADMIN"] {
+  --role: #a2a6f4;
+}
+
+:root.dark {
+  color-scheme: dark;
+
+  --background: #121815;
+  --foreground: #e3e8e2;
+  --card: #1a211e;
+  --card-foreground: #e3e8e2;
+  --popover: #1f2723;
+  --popover-foreground: #e3e8e2;
+
+  --primary-foreground: #0e1311; /* dark ink on the lighter role colours */
+  --role-soft: color-mix(in oklab, var(--role) 18%, #1a211e);
+
+  --secondary: #262f2b;
+  --secondary-foreground: #e3e8e2;
+  --muted: #222a26;
+  --muted-foreground: #9ba59e;
+  --accent: #26302b;
+  --accent-foreground: #e3e8e2;
+  --destructive: #ec6a62;
+
+  --border: #2f3a34;
+  --input: #3e4a44;
+
+  --lamp-go: #4cbf72;
+  --lamp-caution: #e3a63c;
+  --lamp-stop: #ec6a62;
+  --lamp-off: #66706a;
+
+  --tone-red: #ef6e66;
+  --tone-orange: #ef8d4c;
+  --tone-amber: #e3a63c;
+  --tone-yellow: #d9be3f;
+  --tone-blue: #74a7ea;
+  --tone-slate: #97a5af;
+  --tone-grey: #9aa29c;
+  --tone-indigo: #9195ec;
+  --tone-purple: #b68ee2;
+  --tone-teal: #45c2bb;
+  --tone-green: #5cc47e;
+  --tone-ink: #c9d1cc;
+
+  --chart-1: #77a8ec;
+  --chart-2: #45c2bb;
+  --chart-3: #a2a6f4;
+  --chart-4: #e3a63c;
+  --chart-5: #ec6a62;
+
+  --tint-ink: white;
+  --role-employee: #77a8ec;
+  --role-technician: #45c2bb;
+  --role-admin: #a2a6f4;
+
+  --sidebar: #161c19;
+  --sidebar-foreground: #e3e8e2;
+  --sidebar-primary-foreground: #0e1311;
+  --sidebar-accent-foreground: #e3e8e2;
+  --sidebar-border: #2a342f;
 }
 
 /* Make the variables available as Tailwind classes (bg-card, bg-lamp-go, ...) */
@@ -115,9 +200,9 @@
 
   --color-role: var(--role);
   --color-role-soft: var(--role-soft);
-  --color-employee: #1f5fad;
-  --color-technician: #0e7c78;
-  --color-admin: #3b3f9e;
+  --color-employee: var(--role-employee);
+  --color-technician: var(--role-technician);
+  --color-admin: var(--role-admin);
 
   --color-lamp-go: var(--lamp-go);
   --color-lamp-caution: var(--lamp-caution);

@@ -101,7 +101,7 @@ function AssignForm({ incident, onDone, onError, busy, setBusy, close }) {
             options={options}
           />
           {data && !data.activeStrategy && active && (
-            <p className="text-sm text-[color:color-mix(in_oklab,var(--lamp-caution)_70%,black)]">
+            <p className="text-sm text-[color:color-mix(in_oklab,var(--lamp-caution)_70%,var(--tint-ink))]">
               Preview only: auto-assign uses {strategyLabel(active)}.
             </p>
           )}

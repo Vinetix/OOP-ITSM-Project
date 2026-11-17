@@ -140,7 +140,7 @@ export default function WorkloadPage() {
                         className={cn(
                           'text-sm font-semibold md:text-right',
                           w.acceptingWork
-                            ? 'text-[color:color-mix(in_oklab,var(--lamp-go)_75%,black)]'
+                            ? 'text-[color:color-mix(in_oklab,var(--lamp-go)_75%,var(--tint-ink))]'
                             : 'text-muted-foreground',
                         )}
                       >

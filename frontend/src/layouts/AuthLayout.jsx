@@ -3,6 +3,7 @@
 import { Outlet } from 'react-router'
 import { BackendStatus } from '@/components/BackendStatus'
 import { Lamp } from '@/components/Lamp'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { Wordmark } from '@/components/Wordmark'
 
 const STATIONS = [
@@ -55,7 +56,10 @@ export function AuthLayout() {
       <div className="flex flex-col px-5 py-6 sm:px-10">
         <div className="flex items-center justify-between gap-4">
           <Wordmark className="lg:invisible" />
-          <BackendStatus />
+          <div className="flex items-center gap-1">
+            <BackendStatus />
+            <ThemeToggle />
+          </div>
         </div>
         <main className="flex flex-1 items-center justify-center py-10">
           <div className="w-full max-w-md">

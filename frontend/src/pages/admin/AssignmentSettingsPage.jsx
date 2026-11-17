@@ -125,12 +125,12 @@ function SettingsForm({ saved, onSaved }) {
                     <span className="flex flex-wrap items-center gap-2 font-semibold">
                       {strategyLabel(s.name)}
                       {s.active && (
-                        <span className="rounded-sm bg-lamp-go/15 px-1.5 py-0.5 text-xs font-semibold text-[color:color-mix(in_oklab,var(--lamp-go)_75%,black)]">
+                        <span className="rounded-sm bg-lamp-go/15 px-1.5 py-0.5 text-xs font-semibold text-[color:color-mix(in_oklab,var(--lamp-go)_75%,var(--tint-ink))]">
                           Active
                         </span>
                       )}
                       {checked && !s.active && (
-                        <span className="rounded-sm bg-lamp-caution/15 px-1.5 py-0.5 text-xs font-semibold text-[color:color-mix(in_oklab,var(--lamp-caution)_70%,black)]">
+                        <span className="rounded-sm bg-lamp-caution/15 px-1.5 py-0.5 text-xs font-semibold text-[color:color-mix(in_oklab,var(--lamp-caution)_70%,var(--tint-ink))]">
                           Not saved
                         </span>
                       )}

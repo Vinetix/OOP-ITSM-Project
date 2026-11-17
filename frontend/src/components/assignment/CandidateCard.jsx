@@ -47,7 +47,7 @@ export function CandidateCard({ candidate, rank, onAssign, busy, disabled }) {
                     className={cn(
                       'shrink-0 rounded-sm px-1.5 py-0.5 text-xs font-bold tabular-nums',
                       points > 0
-                        ? 'bg-lamp-go/12 text-[color:color-mix(in_oklab,var(--lamp-go)_75%,black)]'
+                        ? 'bg-lamp-go/12 text-[color:color-mix(in_oklab,var(--lamp-go)_75%,var(--tint-ink))]'
                         : 'bg-muted text-muted-foreground',
                     )}
                   >

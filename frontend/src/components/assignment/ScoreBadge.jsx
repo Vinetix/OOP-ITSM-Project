@@ -4,9 +4,9 @@ import { cn } from '@/lib/utils'
 export function ScoreBadge({ score, className }) {
   const tone =
     score >= 70
-      ? 'border-lamp-go bg-lamp-go/10 text-[color:color-mix(in_oklab,var(--lamp-go)_75%,black)]'
+      ? 'border-lamp-go bg-lamp-go/10 text-[color:color-mix(in_oklab,var(--lamp-go)_75%,var(--tint-ink))]'
       : score >= 40
-        ? 'border-lamp-caution bg-lamp-caution/10 text-[color:color-mix(in_oklab,var(--lamp-caution)_70%,black)]'
+        ? 'border-lamp-caution bg-lamp-caution/10 text-[color:color-mix(in_oklab,var(--lamp-caution)_70%,var(--tint-ink))]'
         : 'border-lamp-off bg-muted text-muted-foreground'
   return (
     <span

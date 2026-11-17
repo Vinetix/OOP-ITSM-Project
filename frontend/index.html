@@ -12,6 +12,21 @@
       rel="stylesheet"
     />
     <title>I-ITSM</title>
+    <!-- before anything paints: apply the saved theme (or the system's), so dark mode never flashes light -->
+    <style>
+      html { background: #e3e6df; }
+      html.dark { background: #121815; }
+    </style>
+    <script>
+      ;(function () {
+        try {
+          var t = localStorage.getItem('itsm-theme') || 'system'
+          var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.classList.toggle('dark', dark)
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
+        } catch (e) {}
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>
