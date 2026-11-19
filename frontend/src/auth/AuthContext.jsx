@@ -3,10 +3,23 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { authApi } from '@/api/authApi'
-import { setUnauthorizedHandler, tokenStorage } from '@/api/axiosClient'
+import { setUnauthorizedHandler, TOKEN_KEY, tokenStorage } from '@/api/axiosClient'
 import { usersApi } from '@/api/usersApi'
+import { getRoleConfig } from '@/config/roles'
 
 const AuthContext = createContext(null)
+const NOTICE_KEY = 'itsm.sessionNotice'
+
+// read once per page load (not in an effect, which runs twice in development)
+const startupNotice = (() => {
+  try {
+    const notice = sessionStorage.getItem(NOTICE_KEY)
+    sessionStorage.removeItem(NOTICE_KEY)
+    return notice
+  } catch {
+    return null
+  }
+})()
 
 export function AuthProvider({ children }) {
   const navigate = useNavigate()
@@ -53,6 +66,58 @@ export function AuthProvider({ children }) {
     })
     return () => setUnauthorizedHandler(null)
   }, [])
+
+  // a notice left by a sign-in switch from another tab (see below)
+  useEffect(() => {
+    if (!startupNotice) return
+    const timer = setTimeout(() => toast.info(startupNotice, { id: 'session-changed' }), 0)
+    return () => clearTimeout(timer)
+  }, [])
+
+  // All tabs share one saved token. If another tab signs out or signs in as
+  // someone else, follow it here too, so this tab never acts as a different
+  // person than the one it shows.
+  const userRef = useRef(user)
+  useEffect(() => {
+    userRef.current = user
+  }, [user])
+  useEffect(() => {
+    const onStorage = async (event) => {
+      if (event.key !== TOKEN_KEY && event.key !== null) return
+      const token = tokenStorage.get()
+      if (!token) {
+        if (!userRef.current) return
+        setUser(null)
+        setStatus('anonymous')
+        toast.info('You signed out in another tab', { id: 'session-changed' })
+        navigate('/login', { replace: true })
+        return
+      }
+      try {
+        const me = await usersApi.getMe()
+        if (userRef.current?.id === me.id) {
+          setUser(me)
+          setStatus('authenticated')
+          return
+        }
+        // someone else now: reload at their home, so nothing from the previous
+        // person's pages survives; the notice is shown after the reload
+        try {
+          sessionStorage.setItem(
+            NOTICE_KEY,
+            `You’re now signed in as ${me.fullName} (from another tab)`,
+          )
+        } catch {
+          // no notice then, the switch still happens
+        }
+        window.location.replace(getRoleConfig(me.role)?.home ?? '/')
+      } catch {
+        // a bad token ends in the 401 handler above
+      }
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [navigate])
 
   // The accent colour follows the role (see data-role in index.css).
   useEffect(() => {

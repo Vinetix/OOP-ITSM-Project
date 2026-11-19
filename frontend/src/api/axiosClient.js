@@ -2,7 +2,7 @@
 // request and ends the session when the server answers 401.
 import axios from 'axios'
 
-const TOKEN_KEY = 'itsm.accessToken'
+export const TOKEN_KEY = 'itsm.accessToken'
 
 // Never send a token to these, and never treat their 401 as "session expired".
 const PUBLIC_PATHS = ['/api/auth/login', '/api/auth/register', '/api/system/info']

@@ -133,15 +133,17 @@ export const ACTIONS = {
   },
 }
 
-// button order: the natural next steps first, side paths last
+// button order: your own next step first, then (re-)assigning, then side paths.
+// So if the server lets the assignee both acknowledge and re-assign,
+// Acknowledge is the highlighted button and Re-assign sits beside it.
 export const ACTION_ORDER = [
-  'ASSIGN',
   'ACKNOWLEDGE',
   'START',
   'PROVIDE_INFO',
   'RESOLVE',
   'VERIFY',
   'CLOSE',
+  'ASSIGN',
   'REQUEST_INFO',
   'REOPEN',
 ]
