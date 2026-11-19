@@ -10,5 +10,10 @@ export function estimatePriority(impact, urgency, criticality, affectedUsers = 1
   const multiplier = users >= 1000 ? 1.5 : users >= 100 ? 1.25 : 1
   const score = Math.round(base * multiplier)
   const priority = score >= 32 ? 'P1' : score >= 16 ? 'P2' : score >= 6 ? 'P3' : 'P4'
-  return { score, priority, base, multiplier }
+  const factors = {
+    impact: WEIGHTS[impact],
+    urgency: WEIGHTS[urgency],
+    criticality: WEIGHTS[criticality],
+  }
+  return { score, priority, base, multiplier, factors, users }
 }

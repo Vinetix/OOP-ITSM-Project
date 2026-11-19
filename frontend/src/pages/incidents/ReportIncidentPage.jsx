@@ -297,11 +297,13 @@ function ReportForm({ services, categories }) {
                     score <span className="font-semibold text-foreground">{estimate.score}</span>
                   </span>
                 </div>
-                <p className="font-mono text-xs leading-relaxed text-muted-foreground">
-                  {estimate.base}
+                {/* how the score is built: impact × urgency × service criticality (× people) */}
+                <p className="text-xs leading-relaxed text-muted-foreground tabular-nums">
+                  Impact {estimate.factors.impact} × urgency {estimate.factors.urgency} ×
+                  criticality {estimate.factors.criticality}
                   {estimate.multiplier > 1 &&
-                    ` × ${estimate.multiplier} (${Number(values.affectedUsers).toLocaleString('en-IN')} people)`}{' '}
-                  = {estimate.score}
+                    ` × ${estimate.multiplier} for ${estimate.users.toLocaleString('en-IN')} people`}{' '}
+                  = <span className="font-semibold text-foreground">{estimate.score}</span>
                 </p>
               </>
             ) : (

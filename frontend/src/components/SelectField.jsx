@@ -47,7 +47,8 @@ export function SelectField({
           {optional && <span className="font-normal text-muted-foreground">(optional)</span>}
         </Label>
       )}
-      <Select value={value || undefined} onValueChange={onChange} disabled={disabled}>
+      {/* always controlled: '' (not undefined) means "nothing chosen" and shows the placeholder */}
+      <Select value={value ?? ''} onValueChange={onChange} disabled={disabled}>
         <SelectTrigger
           id={id}
           aria-invalid={error ? true : undefined}
